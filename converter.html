@@ -29,7 +29,7 @@
     <style>
         @font-face {
             font-family: 'Zawgyi-One';
-            src: url('https://cdn.jsdelivr.net/npm/zawgyi-one@1.0.0/ZawgyiOne.ttf') format('truetype');
+            src: url('https://zachhtet.github.io/mmtypebridge/fonts/Zawgyi-One.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -37,13 +37,14 @@
         
         @font-face {
             font-family: 'Win Innwa';
-            /* We'll need to host this font or find a CDN that hosts it */
-            src: url('https://mmwebfonts.comquas.com/fonts/WinInnwa.ttf') format('truetype');
+            src: url('https://zachhtet.github.io/mmtypebridge/fonts/W49.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
         }
     </style>
+    <link rel="preload" href="./fonts/Zawgyi-One.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="./fonts/W49.ttf" as="font" type="font/ttf" crossorigin>
     <script src="https://cdn.jsdelivr.net/npm/rabbit-node@1.0.2/lib/rabbit.min.js"></script>
 </head>
 <body>
@@ -280,11 +281,45 @@
                 error({ name: 'LibraryError', message: 'Rabbit library failed to load. Check your internet connection.' });
             }
             
-            // Load and test Zawgyi font
-            loadFont('Zawgyi-One', 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?', zawgyiBox);
+            // Debug font loading
+            console.log("Checking font loading...");
             
-            // Load and test Win Innwa font
-            loadFont('Win Innwa', 'awG rwufatmifjyifqifNyD;NyDvm;?', winBox);
+            // Create a test element for each font
+            const zawgyiTest = document.createElement('div');
+            zawgyiTest.style.fontFamily = 'Zawgyi-One';
+            zawgyiTest.style.visibility = 'hidden';
+            zawgyiTest.textContent = 'Test Zawgyi';
+            document.body.appendChild(zawgyiTest);
+            
+            const winTest = document.createElement('div');
+            winTest.style.fontFamily = 'Win Innwa';
+            winTest.style.visibility = 'hidden';
+            winTest.textContent = 'Test Win';
+            document.body.appendChild(winTest);
+            
+            // Check computed styles
+            setTimeout(() => {
+                const zawgyiFont = window.getComputedStyle(zawgyiTest).fontFamily;
+                const winFont = window.getComputedStyle(winTest).fontFamily;
+                
+                console.log("Zawgyi font:", zawgyiFont);
+                console.log("Win font:", winFont);
+                
+                if (!zawgyiFont.includes('Zawgyi-One')) {
+                    error({ name: 'FontError', message: 'Zawgyi-One font not loaded correctly.' });
+                }
+                
+                if (!winFont.includes('Win Innwa')) {
+                    error({ name: 'FontError', message: 'Win Innwa font not loaded correctly.' });
+                }
+                
+                document.body.removeChild(zawgyiTest);
+                document.body.removeChild(winTest);
+                
+                // Load and test fonts for textareas
+                loadFont('Zawgyi-One', 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?', zawgyiBox);
+                loadFont('Win Innwa', 'awG rwufatmifjyifqifNyD;NyDvm;?', winBox);
+            }, 1000);
         };
         
         function loadFont(fontFamily, testText, element) {
