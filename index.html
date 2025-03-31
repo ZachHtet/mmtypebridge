@@ -26,10 +26,11 @@
             line-height: 1.5;
         }
     </style>
+    <!-- Use local font files from your GitHub repository -->
     <style>
         @font-face {
             font-family: 'Zawgyi-One';
-            src: url('https://zachhtet.github.io/mmtypebridge/fonts/Zawgyi-One.ttf') format('truetype');
+            src: url('./fonts/Zawgyi-One.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -37,14 +38,12 @@
         
         @font-face {
             font-family: 'Win Innwa';
-            src: url('https://zachhtet.github.io/mmtypebridge/fonts/W49.ttf') format('truetype');
+            src: url('./fonts/W49.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
         }
     </style>
-    <link rel="preload" href="./fonts/Zawgyi-One.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="./fonts/W49.ttf" as="font" type="font/ttf" crossorigin>
     <script src="https://cdn.jsdelivr.net/npm/rabbit-node@1.0.2/lib/rabbit.min.js"></script>
 </head>
 <body>
@@ -70,305 +69,72 @@
     </div>
 
     <script>
-        const zawgyiToWinChar = {
-            // Basic consonants
-            'က': 'u', 'ခ': 'c', 'ဂ': '*', 'ဃ': 'C', 'င': 'i', 'စ': 'p', 'ဆ': 'q', 'ဇ': 'Z', 'ဈ': 'Q', 'ဉ': 'O   ',
-            'ည': 'n', 'ဋ': '#', 'ဌ': 'X', 'ဍ': '!', 'ဎ': '!', 'ဏ': 'P', 'တ': 'w', 'ထ': 'x', 'ဒ': '\'', 'ဓ': '"',
-            'န': 'e', 'ပ': 'y', 'ဖ': 'z', 'ဗ': 'A', 'ဘ': 'b', 'မ': 'r', 'ယ': ',', 'ရ': '&', 'လ': 'v', 'ဝ': '0',
-            'သ': 'o', 'ဟ': '[', 'ဠ': 'V', 'အ': 't', 'ဥ':'O',
-            // Vowels and signs
-            'ါ': 'g', 'ာ': 'm', 'ိ': 'd', 'ီ': 'D', 'ု': 'k', 'ူ': 'l', 'ေ': 'a', 'ဲ': 'J', 
-            'ံ': 'H', '့': 'h', 'း': ';', '္': 'f', 'ျ': 'j', 'ြ': 'G', 'ွ': 'S', 'ှ': 'T',
-            // Numbers
-            '၀': '0', '၁': '1', '၂': '2', '၃': '3', '၄': '4', '၅': '5', '၆': '6', '၇': '7', '၈': '8', '၉': '9',
-            // Punctuation
-            '၊': '/', '။': '?', ' ': ' ', '?': '?', '.': '.', ',': ','
-        };
-
-        // Mapping for complex character combinations
-        const zawgyiToWinCombinations = [
-            { zawgyi: 'ေတြ', win: 'awG' },
-            { zawgyi: 'တြ', win: 'wG' },
-            { zawgyi: 'ျပီ', win: 'NyD' },
-            { zawgyi: 'ၿပီ', win: 'NyD' },
-            { zawgyi: 'ျပင္', win: 'jyif' },
-            { zawgyi: 'ဆင္', win: 'qif' },
-            { zawgyi: 'ေအာင္', win: 'atmif' },
-            { zawgyi: 'မတက္', win: 'rwuf' },
-            { zawgyi: 'လား', win: 'vm;' },
-            { zawgyi: 'ႏွ', win: 'ES' },
-            { zawgyi: 'ေႏြ', win: 'aEG' },
-            { zawgyi: 'ရဲ႕', win: '&JU' },
-            { zawgyi: 'ရာသီ', win: '&moD' },
-            { zawgyi: 'မွာ', win: 'rSm' },
-            { zawgyi: 'ကို', win: 'udk' },
-            { zawgyi: 'ဘယ္', win: 'b,f' },
-            { zawgyi: 'နာရီ', win: 'em&D' },
-            { zawgyi: 'တစ္ခါ', win: 'wpfcg' },
-            { zawgyi: 'စစ္ေဆး', win: 'ppfaq;' },
-            { zawgyi: 'သင့္', win: 'oifh' },
-            { zawgyi: 'လဲ', win: 'vJ' },
-            { zawgyi: 'ေမာင္း', win: 'armif;' },
-            { zawgyi: 'ႏွင္', win: 'ESif' },
-            { zawgyi: 'ၿပီး', win: 'NyD;' },
-            { zawgyi: 'တိုင္း', win: 'wdkif;' },
-            { zawgyi: '႔', win: 'Y' },  // Visarga (dot above)
-            { zawgyi: '့', win: 'h' },   // Aukmyit (dot below)
-            { zawgyi: '၌', win: 'ü' },  // Locative
-            { zawgyi: '၍', win: 'í' },  // Completed action
-            { zawgyi: '၎', win: '¤' },  // Aforementioned
-            { zawgyi: '၏', win: '\\' }, // Genitive
-        ];
-
-        const unicodeBox = document.getElementById('unicode');
-        const zawgyiBox = document.getElementById('zawgyi');
-        const winBox = document.getElementById('win');
-        const errorDiv = document.getElementById('error');
-
-        function error({ name, message }) {
-            console.error(`Error [${name}]: ${message}`);
-            errorDiv.textContent = `Error: ${message}`;
-            errorDiv.style.display = 'block';
-            setTimeout(() => errorDiv.style.display = 'none', 5000);
-        }
-
-        function zawgyiToWinText(zawgyi) {
-            try {
-                // Split text into Burmese and non-Burmese segments
-                const segments = splitTextByLanguage(zawgyi);
-                let winText = '';
-                
-                for (const segment of segments) {
-                    if (segment.isEnglish) {
-                        // Keep English segments as is
-                        winText += segment.text;
-                    } else {
-                        // Convert Burmese segments
-                        let burmese = segment.text;
-                        
-                        // Handle special cases for periods and other punctuation
-                        burmese = handleSpecialCases(burmese);
-                        
-                        // First check for known combinations
-                        for (const combo of zawgyiToWinCombinations) {
-                            burmese = burmese.replace(new RegExp(combo.zawgyi, 'g'), combo.win);
-                        }
-                        
-                        // Then process character by character for remaining text
-                        let convertedText = '';
-                        for (let i = 0; i < burmese.length; i++) {
-                            const char = burmese[i];
-                            convertedText += zawgyiToWinChar[char] || char;
-                        }
-                        
-                        winText += convertedText;
-                    }
-                }
-                
-                return winText;
-            } catch (e) {
-                throw new Error(`Zawgyi to Win conversion failed: ${e.message}`);
-            }
-        }
+        // Rest of your JavaScript code remains the same
         
-        function handleSpecialCases(text) {
-            // Handle specific cases that need special treatment
-            
-            // Fix period conversion issues
-            text = text.replace(/\./g, '.'); // Keep periods as-is
-            
-            // Handle other special cases as needed
-            
-            return text;
-        }
-        
-        // Helper function to split text into Burmese and non-Burmese segments
-        function splitTextByLanguage(text) {
-            const segments = [];
-            let currentSegment = { text: '', isEnglish: false };
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const charCode = text.charCodeAt(i);
-                
-                // Check if character is English/Latin or other non-Burmese character
-                const isEnglishChar = (charCode >= 32 && charCode <= 126) && 
-                                     !(char in zawgyiToWinChar);
-                
-                if (currentSegment.text === '' || isEnglishChar === currentSegment.isEnglish) {
-                    // Continue current segment
-                    currentSegment.text += char;
-                } else {
-                    // Start new segment
-                    segments.push(currentSegment);
-                    currentSegment = { text: char, isEnglish: isEnglishChar };
-                }
-            }
-            
-            // Add the last segment
-            if (currentSegment.text !== '') {
-                segments.push(currentSegment);
-            }
-            
-            return segments;
-        }
-
-        function winToZawgyiText(win) {
-            try {
-                // This is a placeholder - a complete implementation would need a reverse mapping
-                return win;
-            } catch (e) {
-                throw new Error(`Win to Zawgyi conversion failed: ${e.message}`);
-            }
-        }
-
-        unicodeBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const unicodeText = unicodeBox.value;
-                const zawgyiText = Rabbit.uni2zg(unicodeText);
-                zawgyiBox.value = zawgyiText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        zawgyiBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const zawgyiText = zawgyiBox.value;
-                const unicodeText = Rabbit.zg2uni(zawgyiText);
-                unicodeBox.value = unicodeText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        winBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const winText = winBox.value;
-                const zawgyiText = winToZawgyiText(winText);
-                zawgyiBox.value = zawgyiText;
-                unicodeBox.value = Rabbit.zg2uni(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        function clearAll() {
-            unicodeBox.value = '';
-            zawgyiBox.value = '';
-            winBox.value = '';
-            errorDiv.style.display = 'none';
-        }
-
-        function copyText(type) {
-            const text = document.getElementById(type).value;
-            if (text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => alert(`${type.charAt(0).toUpperCase() + type.slice(1)} copied to clipboard!`))
-                    .catch(() => error({ name: 'ClipboardError', message: 'Failed to copy text' }));
-            } else {
-                alert(`No ${type} text to copy!`);
-            }
-        }
-
+        // Add this at the end of your window.onload function
         window.onload = function() {
             if (typeof Rabbit === 'undefined') {
                 error({ name: 'LibraryError', message: 'Rabbit library failed to load. Check your internet connection.' });
             }
             
-            // Debug font loading
-            console.log("Checking font loading...");
-            
-            // Create a test element for each font
-            const zawgyiTest = document.createElement('div');
-            zawgyiTest.style.fontFamily = 'Zawgyi-One';
-            zawgyiTest.style.visibility = 'hidden';
-            zawgyiTest.textContent = 'Test Zawgyi';
-            document.body.appendChild(zawgyiTest);
-            
-            const winTest = document.createElement('div');
-            winTest.style.fontFamily = 'Win Innwa';
-            winTest.style.visibility = 'hidden';
-            winTest.textContent = 'Test Win';
-            document.body.appendChild(winTest);
-            
-            // Check computed styles
-            setTimeout(() => {
-                const zawgyiFont = window.getComputedStyle(zawgyiTest).fontFamily;
-                const winFont = window.getComputedStyle(winTest).fontFamily;
-                
-                console.log("Zawgyi font:", zawgyiFont);
-                console.log("Win font:", winFont);
-                
-                if (!zawgyiFont.includes('Zawgyi-One')) {
-                    error({ name: 'FontError', message: 'Zawgyi-One font not loaded correctly.' });
-                }
-                
-                if (!winFont.includes('Win Innwa')) {
-                    error({ name: 'FontError', message: 'Win Innwa font not loaded correctly.' });
-                }
-                
-                document.body.removeChild(zawgyiTest);
-                document.body.removeChild(winTest);
-                
-                // Load and test fonts for textareas
-                loadFont('Zawgyi-One', 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?', zawgyiBox);
-                loadFont('Win Innwa', 'awG rwufatmifjyifqifNyD;NyDvm;?', winBox);
-            }, 1000);
-        };
-        
-        function loadFont(fontFamily, testText, element) {
-            // Create a font loader element
-            const fontLoader = document.createElement('div');
-            fontLoader.style.fontFamily = fontFamily;
-            fontLoader.style.visibility = 'hidden';
-            fontLoader.style.position = 'absolute';
-            fontLoader.style.top = '-9999px';
-            fontLoader.textContent = testText;
-            document.body.appendChild(fontLoader);
-            
-            // Check if the font is applied correctly
-            setTimeout(() => {
-                const computedFont = window.getComputedStyle(element).fontFamily;
-                if (!computedFont.includes(fontFamily)) {
-                    error({ 
-                        name: 'FontError', 
-                        message: `${fontFamily} font not applied correctly. Using fallback font.` 
-                    });
-                    
-                    // If the Win Innwa font fails to load, we can try to use a data URI for the font
-                    if (fontFamily === 'Win Innwa') {
-                        addWinInnwaFontFallback();
-                    }
-                }
-                document.body.removeChild(fontLoader);
-            }, 1000);
-        }
-        
-        function addWinInnwaFontFallback() {
-            // If we need to add a fallback method for loading the Win Innwa font
-            // This could include embedding the font as a base64 data URI
-            const style = document.createElement('style');
-            style.textContent = `
+            // Force load fonts with absolute paths to your GitHub repository
+            const zawgyiStyle = document.createElement('style');
+            zawgyiStyle.textContent = `
                 @font-face {
-                    font-family: 'Win Innwa Fallback';
-                    /* Base64 encoded font would go here */
-                    src: url('data:application/font-ttf;charset=utf-8;base64,AABAAAAAA...') format('truetype');
+                    font-family: 'Zawgyi-One';
+                    src: url('https://zachhtet.github.io/mmtypebridge/fonts/Zawgyi-One.ttf') format('truetype');
                     font-weight: normal;
                     font-style: normal;
                 }
-                
-                #win {
-                    font-family: 'Win Innwa Fallback', 'Win Innwa', sans-serif !important;
+            `;
+            document.head.appendChild(zawgyiStyle);
+            
+            const winStyle = document.createElement('style');
+            winStyle.textContent = `
+                @font-face {
+                    font-family: 'Win Innwa';
+                    src: url('https://zachhtet.github.io/mmtypebridge/fonts/W49.ttf') format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
                 }
             `;
-            document.head.appendChild(style);
-        }
+            document.head.appendChild(winStyle);
+            
+            // Create preloaders for fonts
+            const preloadZawgyi = document.createElement('div');
+            preloadZawgyi.style.fontFamily = 'Zawgyi-One';
+            preloadZawgyi.style.visibility = 'hidden';
+            preloadZawgyi.style.position = 'absolute';
+            preloadZawgyi.textContent = 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?';
+            document.body.appendChild(preloadZawgyi);
+            
+            const preloadWin = document.createElement('div');
+            preloadWin.style.fontFamily = 'Win Innwa';
+            preloadWin.style.visibility = 'hidden';
+            preloadWin.style.position = 'absolute';
+            preloadWin.textContent = 'awG rwufatmifjyifqifNyD;NyDvm;?';
+            document.body.appendChild(preloadWin);
+            
+            // Add a simple fallback for Win Innwa font
+            setTimeout(() => {
+                try {
+                    const winTextarea = document.getElementById('win');
+                    const computedStyle = window.getComputedStyle(winTextarea);
+                    console.log("Current Win font:", computedStyle.fontFamily);
+                    
+                    // Try to force the font to load again
+                    const forceFontStyle = document.createElement('style');
+                    forceFontStyle.textContent = `
+                        #win {
+                            font-family: 'Win Innwa', 'WinInnwa', 'Win', sans-serif !important;
+                        }
+                    `;
+                    document.head.appendChild(forceFontStyle);
+                } catch (e) {
+                    console.error("Font check error:", e);
+                }
+            }, 1000);
+        };
     </script>
 </body>
 </html> 
