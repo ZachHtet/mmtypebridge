@@ -17,8 +17,16 @@
     
     <!-- Success toast -->
     <div class="toast" id="toast">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="toast-icon success-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 6L9 17l-5-5"></path>
+        </svg>
+        <svg class="toast-icon warning-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">i</text>
+        </svg>
+        <svg class="toast-icon error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
         <span id="toast-message">Copied to clipboard!</span>
     </div>
@@ -27,23 +35,31 @@
         <header class="header">
             <a href="#" class="logo">MM Type Bridge</a>
             <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
-                <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"></path>
-                </svg>
-                <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
-                    <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 0 1-1v-1a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1zm0 20a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm13-11h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zm-24 0h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zm18.071-7.071a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414a1 1 0 0 0 0-1.414zM7.757 17.657a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 1 0 1.414 1.414l1.414-1.414a1 1 0 0 0 0-1.414zM4.929 4.929a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414zm14.142 14.142a1 1 0 0 0 1.414-1.414l-1.414-1.414a1 1 0 0 0-1.414 1.414z"></path>
-                </svg>
+                <div class="toggle-track"></div>
+                <div class="toggle-icons">
+                    <div class="sun-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 0 1-1V1a1 1 0 0 0-2 0v.01A1 1 0 0 0 12 2zm0 20a1 1 0 0 0-1 1v.01a1 1 0 1 0 2 0V23a1 1 0 0 0-1-1zm10-10h-.01a1 1 0 0 0 0 2H22a1 1 0 0 0 0-2zM2 12a1 1 0 0 0-1 1v.01a1 1 0 1 0 2 0V13a1 1 0 0 0-1-1zm16.95-5.37a1 1 0 0 0-.71-.29 1 1 0 0 0-.71.29 1 1 0 0 0 0 1.42l.01.01a1 1 0 0 0 1.41-1.42zm-13.31 13.3a1 1 0 0 0-1.42 1.42l.01.01a1 1 0 0 0 1.41-1.42zM6.37 6.34a1 1 0 0 0-1.42-1.42l-.01.01a1 1 0 0 0 1.42 1.42zm13.31 13.31a1 1 0 0 0-1.42 0l-.01.01a1 1 0 1 0 1.42-1.42z"/>
+                        </svg>
+                    </div>
+                    <div class="moon-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/>
+                            <path d="M17.5 6.5l.5 2-2-.5 1.5-1.5zM19 10l1 1.5-1.5-.5.5-1zM16 13l-.5 2 2-1-1.5-1z" fillOpacity="0.8"/>
+                        </svg>
+                    </div>
+                </div>
             </button>
         </header>
 
         <main class="main">
             <div class="card">
-                <h1 class="title">MM Type Bridge</h1>
-                <p class="subtitle">Seamlessly convert between Myanmar Unicode, Zawgyi, and Win Innwa fonts</p>
+                <!-- <h1 class="title">MM Type Bridge</h1>
+                <p class="subtitle">Seamlessly convert between Myanmar Unicode, Zawgyi, and Win Innwa fonts</p> -->
 
                 <div class="converter-grid">
                     <div class="converter-item">
-                        <label for="unicode" class="converter-label">Unicode (using Pyidaungsu font)</label>
+                        <label for="unicode" class="converter-label">Unicode</label>
                         <textarea id="unicode" class="textarea" placeholder="သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။"></textarea>
                         <div class="button-group">
                             <button id="copy-unicode" class="button button-secondary tooltip">
@@ -53,18 +69,11 @@
                                 Copy
                                 <span class="tooltiptext">Copy text</span>
                             </button>
-                            <button id="clear-unicode" class="button button-secondary tooltip">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
-                                </svg>
-                                Clear
-                                <span class="tooltiptext">Clear text</span>
-                            </button>
                         </div>
                     </div>
 
                     <div class="converter-item">
-                        <label for="zawgyi" class="converter-label">Zawgyi (using Zawgyi-One font)</label>
+                        <label for="zawgyi" class="converter-label">Zawgyi</label>
                         <textarea id="zawgyi" class="textarea" placeholder="သီဟိုဠႀကီးရွင္သည္ အာယုဝဍ္ဎနေဆးၫႊန္းစာကို ဇလြန္ေဈးေဘး ဗာဒံပင္ထက္ အဓိ႒ာန္လ်က္ ဂဃနဏဖတ္ခဲ့သည္။"></textarea>
                         <div class="button-group">
                             <button id="copy-zawgyi" class="button button-secondary tooltip">
@@ -74,18 +83,11 @@
                                 Copy
                                 <span class="tooltiptext">Copy text</span>
                             </button>
-                            <button id="clear-zawgyi" class="button button-secondary tooltip">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
-                                </svg>
-                                Clear
-                                <span class="tooltiptext">Clear text</span>
-                            </button>
                         </div>
                     </div>
 
                     <div class="converter-item">
-                        <label for="win" class="converter-label">Win Innwa (using Win Innwa font)</label>
+                        <label for="win" class="converter-label">Win</label>
                         <textarea id="win" class="textarea" placeholder="od[dkVfrS ÓPfBuD;&Sifonf tm,k0¡eaq;nTef;pmudk ZvGefaps;ab; Am\'Hyifxuf t&quot;d|mefvsuf *Ce zwfcJhonf/"></textarea>
                         <div class="button-group">
                             <button id="copy-win" class="button button-secondary tooltip">
@@ -95,30 +97,99 @@
                                 Copy
                                 <span class="tooltiptext">Copy text</span>
                             </button>
-                            <button id="clear-win" class="button button-secondary tooltip">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
-                                </svg>
-                                Clear
-                                <span class="tooltiptext">Clear text</span>
-                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="button-group">
-                    <button id="clear-all" class="button button-primary">
+                    <button id="clear-all" class="button button-danger">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
                         </svg>
                         Clear All
                     </button>
                 </div>
+                
+                <!-- FAQ Section -->
+                <div class="faq-container">
+                    <h2 class="faq-title">Frequently Asked Questions</h2>
+                    <div class="accordion">
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <div class="accordion-title">What is MM Type Bridge?</div>
+                                <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="accordion-body">
+                                    MM Type Bridge is a web tool that lets you easily convert between three major Myanmar text encoding formats: Unicode, Zawgyi, and Win Innwa. Just paste text in any format, and get instant conversions to all other formats.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <div class="accordion-title">What's the difference between Unicode, Zawgyi, and Win?</div>
+                                <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="accordion-body">
+                                    Unicode is the international standard for encoding text that supports all languages, including Myanmar. Zawgyi is a popular non-standard encoding in Myanmar that was used before Unicode support was widespread. Win Innwa is an older ASCII-based encoding system still used in some legacy systems and publications.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <div class="accordion-title">Why do I need to convert between these formats?</div>
+                                <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="accordion-body">
+                                    Different websites, applications, and legacy systems may use different encoding systems. When copying text between them, the characters may appear as boxes or display incorrectly. MM Type Bridge helps ensure your text displays correctly no matter where you use it.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <div class="accordion-title">Does MM Type Bridge store my text?</div>
+                                <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="accordion-body">
+                                    No, MM Type Bridge works entirely in your browser. Your text is never sent to any server or stored anywhere. When you close the page, all text is cleared.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <div class="accordion-header">
+                                <div class="accordion-title">Which font format should I use?</div>
+                                <svg class="accordion-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="accordion-content">
+                                <div class="accordion-body">
+                                    Whenever possible, we recommend using Unicode as it's the international standard and has better support across modern devices and platforms. However, if you're working with older systems or specific websites that require Zawgyi or Win Innwa, use whichever format works for your situation.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
         <footer class="footer">
-            <p>© 2023 MM Type Bridge - Burmese Font Converter</p>
+            <p>© 2025 MM Type Bridge - Burmese Font Converter</p>
         </footer>
     </div>
 
