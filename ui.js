@@ -1,18 +1,18 @@
 // Theme toggle functionality
 const themeToggle = document.getElementById('theme-toggle');
-const moonIcon = document.getElementById('moon-icon');
-const sunIcon = document.getElementById('sun-icon');
 const html = document.documentElement;
 
 // Check for saved theme preference or use preferred color scheme
-const savedTheme = localStorage.getItem('theme') || 
-                  (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+const savedTheme = localStorage.getItem('theme');
 
-// Apply saved theme on load
-if (savedTheme === 'dark') {
-    html.setAttribute('data-theme', 'dark');
-    moonIcon.style.display = 'none';
-    sunIcon.style.display = 'block';
+// Apply saved theme or system preference on load
+if (savedTheme) {
+    html.setAttribute('data-theme', savedTheme);
+} else {
+    const systemTheme = prefersDarkScheme.matches ? 'dark' : 'light';
+    html.setAttribute('data-theme', systemTheme);
+    localStorage.setItem('theme', systemTheme);
 }
 
 // Toggle theme
@@ -22,43 +22,61 @@ themeToggle.addEventListener('click', () => {
     
     html.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    
-    // Toggle icon
-    if (newTheme === 'dark') {
-        moonIcon.style.display = 'none';
-        sunIcon.style.display = 'block';
-    } else {
-        moonIcon.style.display = 'block';
-        sunIcon.style.display = 'none';
+});
+
+// Listen for system theme changes
+prefersDarkScheme.addEventListener('change', (e) => {
+    // Only update if the user hasn't manually set a preference
+    if (!localStorage.getItem('theme')) {
+        const newTheme = e.matches ? 'dark' : 'light';
+        html.setAttribute('data-theme', newTheme);
     }
 });
 
+// Toast notification types
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    
+    // Remove existing classes and hide all icons
+    toast.classList.remove('success', 'warning', 'error');
+    document.querySelectorAll('.toast-icon').forEach(icon => {
+        icon.style.display = 'none';
+    });
+    
+    // Add appropriate class and show correct icon
+    toast.classList.add(type);
+    document.querySelector(`.${type}-icon`).style.display = 'block';
+    
+    // Set message
+    toastMessage.textContent = message;
+    
+    // Show toast
+    toast.classList.add('show');
+    
+    // Hide toast after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
 // Copy functionality with confetti effect
 function copyToClipboard(text, buttonId) {
+    // Check if there's text to copy
+    if (!text.trim()) {
+        showToast('Nothing to copy. Please type something first.', 'warning');
+        return;
+    }
+    
     navigator.clipboard.writeText(text).then(() => {
-        // Show toast notification
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toast-message');
-        toastMessage.textContent = 'Copied to clipboard!';
-        toast.classList.add('show');
+        // Show success notification
+        showToast('Copied to clipboard!', 'success');
         
         // Create confetti effect
         createConfetti();
-        
-        // Hide toast after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toast-message');
-        toastMessage.textContent = 'Failed to copy!';
-        toast.classList.add('show');
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
+        showToast('Failed to copy!', 'error');
     });
 }
 
@@ -103,6 +121,19 @@ function clearWithAnimation(element) {
     }, 300);
 }
 
+// FAQ Accordion functionality
+function initAccordion() {
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    
+    accordionItems.forEach(item => {
+        const header = item.querySelector('.accordion-header');
+        header.addEventListener('click', () => {
+            // Toggle active class on the current item
+            item.classList.toggle('active');
+        });
+    });
+}
+
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
     const unicodeBox = document.getElementById('unicode');
@@ -122,23 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
         copyToClipboard(winBox.value, 'copy-win');
     });
     
-    // Clear buttons
-    document.getElementById('clear-unicode').addEventListener('click', () => {
-        clearWithAnimation(unicodeBox);
-    });
-    
-    document.getElementById('clear-zawgyi').addEventListener('click', () => {
-        clearWithAnimation(zawgyiBox);
-    });
-    
-    document.getElementById('clear-win').addEventListener('click', () => {
-        clearWithAnimation(winBox);
-    });
-    
     // Clear all button
     document.getElementById('clear-all').addEventListener('click', () => {
         clearWithAnimation(unicodeBox);
         clearWithAnimation(zawgyiBox);
         clearWithAnimation(winBox);
     });
+    
+    // Initialize accordion
+    initAccordion();
 }); 

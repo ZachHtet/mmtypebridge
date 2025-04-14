@@ -9,6 +9,9 @@
   --border-color: #ddd;
   --shadow-color: rgba(0, 0, 0, 0.1);
   --success-color: #28a745;
+  --warning-color: #ffc107;
+  --error-color: #dc3545;
+  --danger-color: #dc3545;
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -22,6 +25,7 @@
   --card-bg: #1e1e1e;
   --border-color: #333;
   --shadow-color: rgba(0, 0, 0, 0.3);
+  --warning-color: #ffd54f;
 }
 
 * {
@@ -66,21 +70,96 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  position: relative;
+  width: 60px;
+  height: 30px;
+  padding: 0;
+}
+
+.toggle-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e4e4e7;
+  border-radius: 30px;
+  transition: all 0.4s ease;
+  padding: 3px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-track:before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  color: var(--text-color);
-  transition: background-color 0.3s ease;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
 }
 
-.theme-toggle:hover {
-  background-color: var(--shadow-color);
+/* Icons container */
+.toggle-icons {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
+/* Sun icon - shown in light mode */
+.sun-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.sun-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: #e6edf2;
+}
+
+/* Moon icon - shown in dark mode */
+.moon-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.moon-icon svg {
+  width: 14px;
+  height: 14px;
+  fill: #94a3b8;
+}
+
+/* Dark theme styles */
+[data-theme="dark"] .toggle-track {
+  background-color: #2a3647;
+}
+
+[data-theme="dark"] .toggle-track:before {
+  transform: translateX(30px);
+}
+
+[data-theme="dark"] .sun-icon {
+  opacity: 1;
+}
+
+[data-theme="dark"] .moon-icon {
+  opacity: 1;
 }
 
 .main {
@@ -93,12 +172,11 @@ body {
   box-shadow: 0 4px 12px var(--shadow-color);
   padding: 30px;
   margin-bottom: 30px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px var(--shadow-color);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .title {
@@ -145,6 +223,7 @@ body {
   font-size: 16px;
   resize: none;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  line-height: 1.8;
 }
 
 .textarea:focus {
@@ -167,11 +246,12 @@ body {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .button-primary {
@@ -193,10 +273,16 @@ body {
 .button-secondary:hover {
   background-color: var(--shadow-color);
   transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .button:active {
   transform: translateY(1px);
+}
+
+.button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.3);
 }
 
 .button svg {
@@ -376,14 +462,12 @@ body {
   }
 }
 
-/* Success toast */
+/* Toast with different status colors */
 .toast {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: var(--success-color);
-  color: white;
-  padding: 10px 20px;
+  padding: 12px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow-color);
   opacity: 0;
@@ -393,10 +477,113 @@ body {
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.toast.success {
+  background-color: var(--success-color);
+}
+
+.toast.warning {
+  background-color: var(--warning-color);
+  color: #333;
+}
+
+.toast.error {
+  background-color: var(--error-color);
 }
 
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Make Clear All button red */
+.button-danger {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.button-danger:hover {
+  background-color: #bd2130;
+  transform: translateY(-2px);
+}
+
+/* FAQ Accordion styles */
+.faq-container {
+  margin-top: 40px;
+  width: 100%;
+}
+
+.faq-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.accordion {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.accordion-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  background-color: var(--card-bg);
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.accordion-header:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .accordion-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-color);
+}
+
+.accordion-icon {
+  transition: transform 0.3s ease;
+}
+
+.accordion-item.active .accordion-icon {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.accordion-item.active .accordion-content {
+  max-height: 1000px;
+}
+
+.accordion-body {
+  padding: 15px;
 } 
