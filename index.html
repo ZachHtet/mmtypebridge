@@ -1,13 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
-    <title>Burmese Font Converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM Type Bridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        textarea { width: 300px; height: 100px; margin: 10px; }
-        button { margin: 5px; }
-        #error { color: red; display: none; }
+        @font-face {
+            font-family: 'Zawgyi-One';
+            src: url('./fonts/Zawgyi-One.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Win Innwa';
+            src: url('./fonts/W49.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
         
         #zawgyi { 
             font-family: 'Zawgyi-One', sans-serif !important; 
@@ -25,434 +63,603 @@
             font-size: 16px;
             line-height: 1.5;
         }
-    </style>
-    <!-- Use local font files from your GitHub repository for Zawgyi -->
-    <style>
-        @font-face {
-            font-family: 'Zawgyi-One';
-            src: url('./fonts/Zawgyi-One.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
-        @font-face {
-            font-family: 'Win Innwa';
-            src: url('./fonts/W49.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
+
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-border {
+            position: relative;
+            border-radius: 1rem;
+            padding: 1px;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef);
+        }
+
+        .gradient-border > div {
+            background: white;
+            border-radius: 1rem;
+        }
+
+        .dark .gradient-border > div {
+            background: #1e293b;
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            right: 0;
+            top: -30px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
         }
     </style>
-    <!-- Add a direct link to a known working Win Innwa font -->
-    <link href="https://fonts.cdnfonts.com/css/win-innwa" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/rabbit-node@1.0.2/lib/rabbit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body>
-    <h1>Burmese Font Converter</h1>
-    <div>
-        <label>Unicode</label><br>
-        <textarea id="unicode" placeholder="Enter Unicode text"></textarea>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-500">
+    <!-- Header Section -->
+    <div class="relative bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-900 dark:to-purple-900">
+        <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-white">MM Type Bridge</h1>
+                <button id="theme-toggle" class="p-2 rounded-full glass-card hover:bg-opacity-80 transition-colors">
+                    <i class="fas fa-sun text-amber-500 dark:hidden text-xl"></i>
+                    <i class="fas fa-moon text-blue-400 hidden dark:inline text-xl"></i>
+                </button>
+            </div>
+        </div>
     </div>
-    <div>
-        <label>Zawgyi (using Zawgyi-One font)</label><br>
-        <textarea id="zawgyi" placeholder="Enter Zawgyi text"></textarea>
-    </div>
-    <div>
-        <label>Win Innwa (English characters)</label><br>
-        <textarea id="win" placeholder="Enter Win Innwa text (English characters)"></textarea>
-    </div>
-    <div id="error"></div>
-    <div>
-        <button onclick="clearAll()">Clear</button>
-        <button onclick="copyText('unicode')">Copy Unicode</button>
-        <button onclick="copyText('zawgyi')">Copy Zawgyi</button>
-        <button onclick="copyText('win')">Copy Win</button>
+
+    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <!-- Converter Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Unicode Card -->
+            <div class="gradient-border">
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-base font-semibold text-gray-900 dark:text-white">Unicode</label>
+                        <button onclick="copyText('unicode')" class="tooltip group inline-flex items-center px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors" data-tooltip="Copy text">
+                            <i class="far fa-copy text-indigo-600 dark:text-indigo-400 mr-1.5"></i>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">Copy</span>
+                        </button>
+                    </div>
+                    <textarea id="unicode" class="w-full h-[calc(100vh-300px)] p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur border-2 border-indigo-100 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-gray-900 dark:text-white transition-colors resize-none" placeholder="သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။"></textarea>
+                </div>
+            </div>
+
+            <!-- Zawgyi Card -->
+            <div class="gradient-border">
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-base font-semibold text-gray-900 dark:text-white">Zawgyi</label>
+                        <button onclick="copyText('zawgyi')" class="tooltip group inline-flex items-center px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors" data-tooltip="Copy text">
+                            <i class="far fa-copy text-indigo-600 dark:text-indigo-400 mr-1.5"></i>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">Copy</span>
+                        </button>
+                    </div>
+                    <textarea id="zawgyi" class="w-full h-[calc(100vh-300px)] p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur border-2 border-indigo-100 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-gray-900 dark:text-white transition-colors resize-none" placeholder="သီဟိုဠ္မွ ဉာဏ္ႀကီးရွင္သည္ အာယုဝဍ္ဎနေဆးၫႊန္းစာကို ဇလြန္ေဈးေဘး ဗာဒံပင္ထက္ အဓိ႒ာန္လ္က္ ဂဃနဏဖတ္ခဲ့သည္။"></textarea>
+                </div>
+            </div>
+
+            <!-- Win Innwa Card -->
+            <div class="gradient-border">
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-base font-semibold text-gray-900 dark:text-white">Win Innwa</label>
+                        <button onclick="copyText('win')" class="tooltip group inline-flex items-center px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors" data-tooltip="Copy text">
+                            <i class="far fa-copy text-indigo-600 dark:text-indigo-400 mr-1.5"></i>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">Copy</span>
+                        </button>
+                    </div>
+                    <textarea id="win" class="w-full h-[calc(100vh-300px)] p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur border-2 border-indigo-100 dark:border-gray-700 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-gray-900 dark:text-white transition-colors resize-none" placeholder="od[dkVfrS ÓmPfBuD;&Sifonf tm,k0¡eaq;nTef;pmudk ZvGefaps;ab; Am\'Hyifxuf t\"d|mefvsuf *Ce zwfcJhonf/"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="hidden mt-6 p-4 glass-card bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-100 rounded-lg"></div>
+
+        <!-- Clear Button -->
+        <div class="flex justify-center mt-6">
+            <button onclick="clearAll()" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow transition-colors">
+                <i class="fas fa-trash-alt mr-2"></i>Clear All
+            </button>
+        </div>
     </div>
 
     <script>
-        // Character mapping from Zawgyi to Win Innwa
-        const zawgyiToWinChar = {
-            // Basic consonants
-            'က': 'u', 'ခ': 'c', 'ဂ': '*', 'ဃ': 'C', 'င': 'i', 'စ': 'p', 'ဆ': 'q', 'ဇ': 'Z', 'ဈ': 'Q', 'ဉ': 'O',
-            'ည': 'n', 'ဋ': '#', 'ဌ': 'X', 'ဍ': '!', 'ဎ': '!', 'ဏ': 'P', 'တ': 'w', 'ထ': 'x', 'ဒ': '\'', 'ဓ': '"',
-            'န': 'e', 'ပ': 'y', 'ဖ': 'z', 'ဗ': 'A', 'ဘ': 'b', 'မ': 'r', 'ယ': ',', 'ရ': '&', 'လ': 'v', 'ဝ': '0',
-            'သ': 'o', 'ဟ': '[', 'ဠ': 'V', 'အ': 't', 'ဥ':'O',
-            // Vowels and signs
-            'ါ': 'g', 'ာ': 'm', 'ိ': 'd', 'ီ': 'D', 'ု': 'k', 'ူ': 'l', 'ေ': 'a', 'ဲ': 'J', 
-            'ံ': 'H', '့': 'h', 'း': ';', '္': 'f', 'ျ': 'j', 'ြ': 'G', 'ွ': 'S', 'ှ': 'T',
-            // Numbers
-            '၀': '0', '၁': '1', '၂': '2', '၃': '3', '၄': '4', '၅': '5', '၆': '6', '၇': '7', '၈': '8', '၉': '9',
-            // Punctuation
-            '၊': '/', '။': '?', ' ': ' ', '?': '?', '.': '.', ',': ',', '"': '"', '"': '"', '\n': '\n'
-        };
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        
+        // Check for saved theme preference, defaulting to 'light'
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        html.classList.remove('light', 'dark');
+        html.classList.add(savedTheme);
 
-        // Special character combinations for Win Innwa
-        const specialCombinations = {
-            'ကြ': 'uF', 'ခြ': 'cF', 'ဂြ': '*F', 'ဃြ': 'CF', 'ငြ': 'iF',
-            'စြ': 'pF', 'ဆြ': 'qF', 'ဇြ': 'ZF', 'ဈြ': 'QF', 'ဉြ': 'OF',
-            'ညြ': 'nF', 'ဋြ': '#F', 'ဌြ': 'XF', 'ဍြ': '!F', 'ဎြ': '!F',
-            'ဏြ': 'PF', 'တြ': 'wF', 'ထြ': 'xF', 'ဒြ': '\'F', 'ဓြ': '"F',
-            'နြ': 'eF', 'ပြ': 'yF', 'ဖြ': 'zF', 'ဗြ': 'AF', 'ဘြ': 'bF',
-            'မြ': 'rF', 'ယြ': ',F', 'ရြ': '&F', 'လြ': 'vF', 'ဝြ': '0F',
-            'သြ': 'oF', 'ဟြ': '[F', 'ဠြ': 'VF', 'အြ': 'tF', 'ဥြ': 'OF',
-            'ကြွ': 'uGS', 'ခြွ': 'cGS', 'ဂြွ': '*GS', 'ငြွ': 'iGS',
-            'စြွ': 'pGS', 'ဆြွ': 'qGS', 'ဇြွ': 'ZGS', 'ညြွ': 'nGS',
-            'တြွ': 'wGS', 'ထြွ': 'xGS', 'ဒြွ': '\'GS', 'နြွ': 'eGS',
-            'ပြွ': 'yGS', 'ဖြွေ': 'zGS', 'ဗြွေ': 'AGS', 'ဘြွေ': 'bGS',
-            'မြွေ': 'rGS', 'ယြွေ': ',GS', 'ရြွေ': '&GS', 'လြွေ': 'vGS',
-            'သြွေ': 'oGS', 'ဟြွေ': '[GS', 'အြွေ': 'tGS',
-            'ကြော': 'auFm', 'ခြော': 'acFm', 'ဂြော': 'a*Fm', 'ငြော': 'aiFm',
-            'စြော': 'apFm', 'ဆြော': 'aqFm', 'ဇြော': 'aZFm', 'ညြော': 'anFm',
-            'တြော': 'awFm', 'ထြော': 'axFm', 'ဒြော': 'a\'Fm', 'နြော': 'aeFm',
-            'ပြော': 'ayFm', 'ဖြော': 'azFm', 'ဗြော': 'aAFm', 'ဘြော': 'abFm',
-            'မြော': 'arFm', 'ယြော': 'a,Fm', 'ရြော': 'a&Fm', 'လြောင်': 'avFmif',
-            'သြော': 'aoFm', 'ဟြော': 'a[Fmif', 'အြော': 'atFmif',
-            'ကြို': 'uFdk', 'ခြို': 'cFdk', 'ဂြို': '*Fdk', 'ငြို': 'iFdk',
-            'စြို': 'pFdk', 'ဆြို': 'qFdk', 'ဇြို': 'ZFdk', 'ညြို': 'nFdk',
-            'တြို': 'wFdk', 'ထြို': 'xFdk', 'ဒြို': '\'Fdk', 'နြို': 'eFdk',
-            'ပြို': 'yFdk', 'ဖြို': 'zFdk', 'ဗြို': 'AFdk', 'ဘြို': 'bFdk',
-            'မြို': 'rFdk', 'ယြို': ',Fdk', 'ရြို': '&Fdk', 'လြို': 'vFdk',
-            'သြို': 'oFdk', 'ဟြို': '[Fdk', 'အြို': 'tFdk',
-            'ကြီ': 'uFD', 'ခြီ': 'cFD', 'ဂြီ': '*FD', 'ငြီ': 'iFD',
-            'စြီ': 'pFD', 'ဆြီ': 'qFD', 'ဇြီ': 'ZFD', 'ညြီ': 'nFD',
-            'တြီ': 'wFD', 'ထြီ': 'xFD', 'ဒြီ': '\'FD', 'နြီ': 'eFD',
-            'ပြီ': 'yFD', 'ဖြီ': 'zFD', 'ဗြီ': 'AFD', 'ဘြီ': 'bFD',
-            'မြီ': 'rFD', 'ယြီ': ',FD', 'ရြီ': '&FD', 'လြီ': 'vFD',
-            'သြီ': 'oFD', 'ဟြီ': '[FD', 'အြီ': 'tFD',
-            'ကြံ': 'uFH', 'ခြံ': 'cFH', 'ဂြံ': '*FH', 'ငြံ': 'iFH',
-            'စြံ': 'pFH', 'ဆြံ': 'qFH', 'ဇြံ': 'ZFH', 'ညြံ': 'nFH',
-            'တြံ': 'wFH', 'ထြံ': 'xFH', 'ဒြံ': '\'FH', 'နြံ': 'eFH',
-            'ပြံ': 'yFH', 'ဖြံ': 'zFH', 'ဗြံ': 'AFH', 'ဘြံ': 'bFH',
-            'မြံ': 'rFH', 'ယြံ': ',FH', 'ရြံ': '&FH', 'လြံ': 'vFH',
-            'သြံ': 'oFH', 'ဟြံ': '[FH', 'အြံ': 'tFH',
-            'ကြိ': 'uFd', 'ခြိ': 'cFd', 'ဂြိ': '*Fd', 'ငြိ': 'iFd',
-            'စြိ': 'pFd', 'ဆြိ': 'qFd', 'ဇြိ': 'ZFd', 'ညြိ': 'nFd',
-            'တြိ': 'wFd', 'ထြိ': 'xFd', 'ဒြိ': '\'Fd', 'နြိ': 'eFd',
-            'ပြိ': 'yFd', 'ဖြိ': 'zFd', 'ဗြိ': 'AFd', 'ဘြိ': 'bFd',
-            'မြိ': 'rFd', 'ယြိ': ',Fd', 'ရြိ': '&Fd', 'လြိ': 'vFd',
-            'သြိ': 'oFd', 'ဟြိ': '[Fd', 'အြိ': 'tFd',
-            'ကြဲ': 'uFJ', 'ခြဲ': 'cFJ', 'ဂြဲ': '*FJ', 'ငြဲ': 'iFJ',
-            'စြဲ': 'pFJ', 'ဆြဲ': 'qFJ', 'ဇြဲ': 'ZFJ', 'ညြဲ': 'nFJ',
-            'တြဲ': 'wFJ', 'ထြဲ': 'xFJ', 'ဒြဲ': '\'FJ', 'နြဲ': 'eFJ',
-            'ပြဲ': 'yFJ', 'ဖြဲ': 'zFJ', 'ဗြဲ': 'AFJ', 'ဘြဲ': 'bFJ',
-            'မြဲ': 'rFJ', 'ယြဲ': ',FJ', 'ရြဲ': '&FJ', 'လြဲ': 'vFJ',
-            'သြဲ': 'oFJ', 'ဟြဲ': '[FJ', 'အြဲ': 'tFJ',
-            'ကြောင်': 'auFmif', 'ခြောင်': 'acFmif', 'ဂြောင်': 'a*Fmif', 'ငြောင်': 'aiFmif',
-            'စြောင်': 'apFmif', 'ဆြောင်': 'aqFmif', 'ဇြောင်': 'aZFmif', 'ညြောင်': 'anFmif',
-            'တြောင်': 'awFmif', 'ထြောင်': 'axFmif', 'ဒြောင်': 'a\'Fmif', 'နြောင်': 'aeFmif',
-            'ပြောင်': 'ayFmif', 'ဖြောင်': 'azFmif', 'ဗြောင်': 'aAFmif', 'ဘြောင်': 'abFmif',
-            'မြောင်': 'arFmif', 'ယြောင်': 'a,Fmif', 'ရြောင်': 'a&Fmif', 'လြောင်': 'avFmif',
-            'သြောင်': 'aoFmif', 'ဟြောင်': 'a[Fmif', 'အြောင်': 'atFmif',
-            'ကြု': 'uFk', 'ခြု': 'cFk', 'ဂြု': '*Fk', 'ငြု': 'iFk',
-            'စြု': 'pFk', 'ဆြု': 'qFk', 'ဇြု': 'ZFk', 'ညြု': 'nFk',
-            'တြု': 'wFk', 'ထြု': 'xFk', 'ဒြု': '\'Fk', 'နြု': 'eFk',
-            'ပြု': 'yFk', 'ဖြု': 'zFk', 'ဗြု': 'AFk', 'ဘြု': 'bFk',
-            'မြု': 'rFk', 'ယြု': ',Fk', 'ရြု': '&Fk', 'လြု': 'vFk',
-            'သြု': 'oFk', 'ဟြု': '[Fk', 'အြု': 'tFk',
-            'ကြူ': 'uFl', 'ခြူ': 'cFl', 'ဂြူ': '*Fl', 'ငြူ': 'iFl',
-            'စြူ': 'pFl', 'ဆြူ': 'qFl', 'ဇြူ': 'ZFl', 'ညြူ': 'nFl',
-            'တြူ': 'wFl', 'ထြူ': 'xFl', 'ဒြူ': '\'Fl', 'နြူ': 'eFl',
-            'ပြူ': 'yFl', 'ဖြူ': 'zFl', 'ဗြူ': 'AFl', 'ဘြူ': 'bFl',
-            'မြူ': 'rFl', 'ယြူ': ',Fl', 'ရြူ': '&Fl', 'လြူ': 'vFl',
-            'သြူ': 'oFl', 'ဟြူ': '[Fl', 'အြူ': 'tFl',
-            'ကြ့': 'uFh', 'ခြ့': 'cFh', 'ဂြ့': '*Fh', 'ငြ့': 'iFh',
-            'စြ့': 'pFh', 'ဆြ့': 'qFh', 'ဇြ့': 'ZFh', 'ညြ့': 'nFh',
-            'တြ့': 'wFh', 'ထြ့': 'xFh', 'ဒြ့': '\'Fh', 'နြ့': 'eFh',
-            'ပြ့': 'yFh', 'ဖြ့': 'zFh', 'ဗြ့': 'AFh', 'ဘြ့': 'bFh',
-            'မြ့': 'rFh', 'ယြ့': ',Fh', 'ရြ့': '&Fh', 'လြ့': 'vFh',
-            'သြ့': 'oFh', 'ဟြ့': '[Fh', 'အြ့': 'tFh',
-            'ကြး': 'uF;', 'ခြး': 'cF;', 'ဂြး': '*F;', 'ငြး': 'iF;',
-            'စြး': 'pF;', 'ဆြး': 'qF;', 'ဇြး': 'ZF;', 'ညြး': 'nF;',
-            'တြး': 'wF;', 'ထြး': 'xF;', 'ဒြး': '\'F;', 'နြး': 'eF;',
-            'ပြး': 'yF;', 'ဖြး': 'zF;', 'ဗြး': 'AF;', 'ဘြး': 'bF;',
-            'မြး': 'rF;', 'ယြး': ',F;', 'ရြး': '&F;', 'လြး': 'vF;',
-            'သြး': 'oF;', 'ဟြး': '[F;', 'အြး': 'tF;',
-            'ကြောက်': 'auFmuf', 'ခြောက်': 'acFmuf', 'ဂြောက်': 'a*Fmuf',
-            'စြောက်': 'apFmuf', 'ဆြောက်': 'aqFmuf', 'တြောက်': 'awFmuf',
-            'ပြောက်': 'ayFmuf', 'ဖြောက်': 'azFmuf', 'ဘြောက်': 'abFmuf',
-            'မြောက်': 'arFmuf', 'ရြောက်': 'a&Fmuf', 'လြောက်': 'avFmuf',
-            'သြောက်': 'aoFmuf',
-            'ကြိုက်': 'uFdkuf', 'ခြိုက်': 'cFdkuf', 'ဂြိုက်': '*Fdkuf',
-            'စြိုက်': 'pFdkuf', 'ဆြိုက်': 'qFdkuf', 'တြိုက်': 'wFdkuf',
-            'ပြိုက်': 'yFdkuf', 'ဖြိုက်': 'zFdkuf', 'ဘြိုက်': 'bFdkuf',
-            'မြိုက်': 'rFdkuf', 'ရြိုက်': '&Fdkuf', 'လြိုက်': 'vFdkuf',
-            'သြိုက်': 'oFdkuf',
-            'ကြွေ': 'uGSa', 'ခြွေ': 'cGSa', 'ဂြွေ': '*GSa', 'ငြွေ': 'iGSa',
-            'စြွေ': 'pGSa', 'ဆြွေ': 'qGSa', 'ဇြွေ': 'ZGSa', 'ညြွေ': 'nGSa',
-            'တြွေ': 'wGSa', 'ထြွေ': 'xGSa', 'ဒြွေ': '\'GSa', 'နြွေ': 'eGSa',
-            'ပြွေ': 'yGSa', 'ဖြွေ': 'zGSa', 'ဗြွေ': 'AGSa', 'ဘြွေ': 'bGSa',
-            'မြွေ': 'rGSa', 'ယြွေ': ',GSa', 'ရြွေ': '&GSa', 'လြွေ': 'vGSa',
-            'သြွေ': 'oGSa', 'ဟြွေ': '[GSa', 'အြွေ': 'tGSa',
-            'ကြော့': 'auFmh', 'ခြော့': 'acFmh', 'ဂြော့': 'a*Fmh',
-            'စြော့': 'apFmh', 'ဆြော့': 'aqFmh', 'တြော့': 'awFmh',
-            'ပြော့': 'ayFmh', 'ဖြော့': 'azFmh', 'ဘြော့': 'abFmh',
-            'မြော့': 'arFmh', 'ရြော့': 'a&Fmh', 'လြော့': 'avFmh',
-            'သြော့': 'aoFmh'
-        };
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+        });
 
-        // Common patterns for Zawgyi to Win Innwa conversion
-        const zawgyiToWinPatterns = [
-            // Special combinations first
-            { pattern: /([\u1000-\u1021])([\u103C])([\u1031]?)([\u102D\u102E\u102F\u1030\u1032\u1036\u1037\u1038\u1039\u103A\u103B\u103D\u103E]*)/g,
-              replace: function(match, consonant, ra, e, restVowels) {
-                  // Check if this is a special combination
-                  const combo = consonant + ra + (e || '') + (restVowels || '');
-                  if (specialCombinations[combo]) {
-                      return specialCombinations[combo];
-                  }
-                  
-                  // If not a special combination, handle it with the standard pattern
-                  return (e ? zawgyiToWinChar[e] : '') + 
-                         zawgyiToWinChar[consonant] + 
-                         'F' + // Special handling for ra medial
-                         Array.from(restVowels || '').map(c => zawgyiToWinChar[c] || c).join('');
-              }
-            },
-            
-            // Common syllable patterns with stacked consonants
-            { pattern: /([က-အ])([ျြွှ]*)([ေ]?)([က-အ])([္])/g, 
-              replace: function(match, c1, c2, c3, c4, c5) {
-                  return (c3 ? zawgyiToWinChar[c3] : '') + 
-                         zawgyiToWinChar[c1] + 
-                         Array.from(c2).map(c => {
-                             // Special handling for ra medial
-                             if (c === 'ြ') return 'F';
-                             return zawgyiToWinChar[c] || c;
-                         }).join('') + 
-                         zawgyiToWinChar[c5] + 
-                         zawgyiToWinChar[c4];
-              }
-            },
-            
-            // Vowel 'a' (ေ) comes before consonant in Win Innwa
-            { pattern: /([ေ])([က-အ])/g, 
-              replace: function(match, c1, c2) {
-                  return zawgyiToWinChar[c1] + zawgyiToWinChar[c2];
-              }
-            },
-            
-            // Handle medials and vowels
-            { pattern: /([က-အ])([ျြွှ]+)/g, 
-              replace: function(match, c1, c2) {
-                  return zawgyiToWinChar[c1] + 
-                         Array.from(c2).map(c => {
-                             // Special handling for ra medial
-                             if (c === 'ြ') return 'F';
-                             return zawgyiToWinChar[c] || c;
-                         }).join('');
-              }
-            }
-        ];
-
-        const unicodeBox = document.getElementById('unicode');
-        const zawgyiBox = document.getElementById('zawgyi');
-        const winBox = document.getElementById('win');
+        // Font conversion functionality
+        const unicodeTextarea = document.getElementById('unicode');
+        const zawgyiTextarea = document.getElementById('zawgyi');
+        const winTextarea = document.getElementById('win');
         const errorDiv = document.getElementById('error');
 
-        function error({ name, message }) {
-            console.error(`Error [${name}]: ${message}`);
-            errorDiv.textContent = `Error: ${message}`;
-            errorDiv.style.display = 'block';
-            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        // Function to show error message
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => {
+                errorDiv.classList.add('hidden');
+            }, 3000);
         }
 
-        function zawgyiToWinText(zawgyi) {
+        // Function to copy text
+        function copyText(id) {
+            const textarea = document.getElementById(id);
+            textarea.select();
             try {
-                let result = '';
-                let i = 0;
+                document.execCommand('copy');
                 
-                while (i < zawgyi.length) {
-                    // Check for special combinations first (longest to shortest)
-                    let matched = false;
-                    for (let len = 5; len >= 2; len--) {
-                        if (i + len <= zawgyi.length) {
-                            const combo = zawgyi.substr(i, len);
-                            if (specialCombinations[combo]) {
-                                result += specialCombinations[combo];
-                                i += len;
-                                matched = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Handle specific ြ (Ra Medial) issue - it should be 'j' not 'F'
-                        if (i + 1 < zawgyi.length && zawgyi[i+1] === 'ြ') {
-                            const consonant = zawgyi[i];
-                            if (zawgyiToWinChar[consonant]) {
-                                // According to the reference, "ြ" maps to 'j' in Win Innwa
-                                result += zawgyiToWinChar[consonant] + 'j';
-                                i += 2;
-                                matched = true;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Handle "ေ" vowel which comes before consonant in Win Innwa
-                        if (i + 1 < zawgyi.length && zawgyi[i] === 'ေ') {
-                            const nextChar = zawgyi[i+1];
-                            if (zawgyiToWinChar[nextChar]) {
-                                result += 'a' + zawgyiToWinChar[nextChar];
-                                i += 2;
-                                matched = true;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Standard character conversion for everything else
-                        const char = zawgyi[i];
-                        result += zawgyiToWinChar[char] || char;
-                        i++;
-                    }
-                }
-                
-                return result;
-            } catch (e) {
-                console.error(e);
-                return zawgyi; // Return original on error
-            }
-        }
-        
-        // Helper function to escape special characters in regex
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-        
-        // Helper function to split text into Burmese and non-Burmese segments
-        function splitTextByLanguage(text) {
-            const segments = [];
-            let currentSegment = { text: '', isEnglish: false };
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const charCode = text.charCodeAt(i);
-                
-                // Check if character is English/Latin or other non-Burmese character
-                const isEnglishChar = (charCode >= 32 && charCode <= 126) && 
-                                     !(char in zawgyiToWinChar);
-                
-                if (currentSegment.text === '' || isEnglishChar === currentSegment.isEnglish) {
-                    // Continue current segment
-                    currentSegment.text += char;
-                } else {
-                    // Start new segment
-                    segments.push(currentSegment);
-                    currentSegment = { text: char, isEnglish: isEnglishChar };
-                }
-            }
-            
-            // Add the last segment
-            if (currentSegment.text !== '') {
-                segments.push(currentSegment);
-            }
-            
-            return segments;
-        }
-
-        function winToZawgyiText(win) {
-            try {
-                // This is a placeholder - a complete implementation would need a reverse mapping
-                return win;
-            } catch (e) {
-                throw new Error(`Win to Zawgyi conversion failed: ${e.message}`);
+                // Trigger confetti effect
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            } catch (err) {
+                showError('Failed to copy text to clipboard');
             }
         }
 
-        unicodeBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const unicodeText = unicodeBox.value;
-                const zawgyiText = Rabbit.uni2zg(unicodeText);
-                zawgyiBox.value = zawgyiText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        zawgyiBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const zawgyiText = zawgyiBox.value;
-                const unicodeText = Rabbit.zg2uni(zawgyiText);
-                unicodeBox.value = unicodeText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        winBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const winText = winBox.value;
-                const zawgyiText = winToZawgyiText(winText);
-                zawgyiBox.value = zawgyiText;
-                unicodeBox.value = Rabbit.zg2uni(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
+        // Function to clear all textareas
         function clearAll() {
-            unicodeBox.value = '';
-            zawgyiBox.value = '';
-            winBox.value = '';
-            errorDiv.style.display = 'none';
+            unicodeTextarea.value = '';
+            zawgyiTextarea.value = '';
+            winTextarea.value = '';
         }
 
-        function copyText(type) {
-            const text = document.getElementById(type).value;
-            if (text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => alert(`${type.charAt(0).toUpperCase() + type.slice(1)} copied to clipboard!`))
-                    .catch(() => error({ name: 'ClipboardError', message: 'Failed to copy text' }));
-            } else {
-                alert(`No ${type} text to copy!`);
-            }
-        }
+        // Unicode to Zawgyi conversion
+        unicodeTextarea.addEventListener('input', () => {
+            try {
+                const unicode = unicodeTextarea.value;
+                const zawgyi = Rabbit.uni2zg(unicode);
+                zawgyiTextarea.value = zawgyi;
+                
+                // Convert to Win Innwa
+                let win = zawgyi;
 
-        window.onload = function() {
-            if (typeof Rabbit === 'undefined') {
-                error({ name: 'LibraryError', message: 'Rabbit library failed to load. Check your internet connection.' });
+                // Handle Ra Medial + U vowel combinations first
+                win = win.replace(/(ျ)(ု|ူ)/g, function(match, ra, u) {
+                    // Convert to Win-Innwa format
+                    return u === 'ု' ? 'sK' : 'sL';
+                });
+
+                // Handle double story characters first
+                win = win.replace(/င်္/g, 'F');
+                win = win.replace(/္တ/g, 'å');
+                win = win.replace(/္ထ/g, '¦');
+                win = win.replace(/္ဓ/g, '¨');
+                win = win.replace(/္ခ/g, '©');
+                win = win.replace(/္မ/g, '®');
+                win = win.replace(/္ဆ/g, '°');
+                win = win.replace(/္ဒ/g, '´');
+                win = win.replace(/္ဗ/g, 'º');
+                win = win.replace(/္ဂ/g, '¾');
+                win = win.replace(/္ဇ/g, 'Æ');
+                win = win.replace(/္ဘ/g, 'Ç');
+                win = win.replace(/္ဏ/g, 'Ö');
+                win = win.replace(/္ပ/g, 'Ü');
+                win = win.replace(/္ဖ/g, 'æ');
+                win = win.replace(/္န/g, 'é');
+                win = win.replace(/္ဎ/g, '·');
+                win = win.replace(/င်္ဂြိို/g, 'ì');
+                win = win.replace(/ဏ္ဍ/g, '‹');
+
+                // Complex combinations with multiple vowels
+                // Ra Medial combinations
+                win = win.replace(/ကြီး/g, 'BuD;');
+                win = win.replace(/ကြို/g, 'BudK');
+                win = win.replace(/ကြိူ/g, 'BudL');
+                win = win.replace(/ကြိ/g, 'Bud');                
+                win = win.replace(/ကြီ/g, 'BuD');
+                win = win.replace(/ကြု/g, 'MuK');
+                win = win.replace(/ကြူ/g, 'MuL');
+                win = win.replace(/ကြေ/g, 'aMu');
+                win = win.replace(/ကြဲ/g, 'BuJ');
+                win = win.replace(/ကြံ/g, 'MuH');
+                win = win.replace(/ကြ့/g, 'Muh');
+                win = win.replace(/ကြွ/g, '<u');
+
+                // ခ combinations
+                win = win.replace(/ခြို/g, 'NcdK');
+                win = win.replace(/ခြိူ/g, 'NcdL');
+                win = win.replace(/ခြိ/g, 'Ncd');
+                win = win.replace(/ခြီ/g, 'NcD');
+                win = win.replace(/ခြု/g, 'jcK');
+                win = win.replace(/ခြူ/g, 'jcL');
+                win = win.replace(/ခြေ/g, 'ajc');
+                win = win.replace(/ခြဲ/g, 'NcJ');
+                win = win.replace(/ခြံ/g, 'jcH');
+                win = win.replace(/ခြ့/g, 'jch');
+                win = win.replace(/ခြွ/g, '>c');
+
+                // ဂ combinations
+                win = win.replace(/ဂြို/g, 'N*dK');
+                win = win.replace(/ဂြိူ/g, 'N*dL');
+                win = win.replace(/ဂြိ/g, 'N*d');
+                win = win.replace(/ဂြီ/g, 'N*D');
+                win = win.replace(/ဂြု/g, 'j*K');
+                win = win.replace(/ဂြူ/g, 'j*L');
+                win = win.replace(/ဂြေ/g, 'aj*');
+                win = win.replace(/ဂြဲ/g, 'N*J');
+                win = win.replace(/ဂြံ/g, 'j*H');
+                win = win.replace(/ဂြ့/g, 'j*h');
+                win = win.replace(/ဂြွ/g, '>*');
+
+                // ဃ combinations
+                win = win.replace(/င်္ဃ/g, 'CF');
+                win = win.replace(/ဃြိ/g, 'BCd');
+                win = win.replace(/ဃြီ/g, 'BCD');
+                win = win.replace(/ဃြု/g, 'MCK');
+                win = win.replace(/ဃြူ/g, 'MCL');
+                win = win.replace(/ဃြေ/g, 'aMC');
+                win = win.replace(/ဃြဲ/g, 'BCJ');
+                win = win.replace(/ဃြံ/g, 'MCH');
+                win = win.replace(/ဃြ့/g, 'MCh');
+                win = win.replace(/ဃြွ/g, '<C');
+
+                // င combinations
+                win = win.replace(/ငြို/g, 'NidK');
+                win = win.replace(/ငြိူ/g, 'NidL');
+                win = win.replace(/ငြိ/g, 'Nid');
+                win = win.replace(/ငြီ/g, 'NiD');
+                win = win.replace(/ငြု/g, 'jiK');
+                win = win.replace(/ငြူ/g, 'jiL');
+                win = win.replace(/ငြေ/g, 'aji');
+                win = win.replace(/ငြဲ/g, 'NiJ');
+                win = win.replace(/ငြံ/g, 'jiH');
+                win = win.replace(/ငြ့/g, 'jih');
+                win = win.replace(/ငြွ/g, '>i');
+
+                // စ combinations
+                win = win.replace(/စြို/g, 'NpdK');
+                win = win.replace(/စြိူ/g, 'NpdL');
+                win = win.replace(/စြိ/g, 'Npd');
+                win = win.replace(/စြီ/g, 'NpD');
+                win = win.replace(/စြု/g, 'jpK');
+                win = win.replace(/စြူ/g, 'jpL');
+                win = win.replace(/စြေ/g, 'ajp');
+                win = win.replace(/စြဲ/g, 'NpJ');
+                win = win.replace(/စြံ/g, 'jpH');
+                win = win.replace(/စြ့/g, 'jph');
+                win = win.replace(/စြား/g, 'jpm;');
+                win = win.replace(/စြွ/g, '>p');
+
+                // ဆ combinations
+                win = win.replace(/ဆြို/g, 'BqdK');
+                win = win.replace(/ဆြိ/g, 'Bqd');
+                win = win.replace(/ဆြီ/g, 'BqD');
+                win = win.replace(/ဆြု/g, 'MqK');
+                win = win.replace(/ဆြူ/g, 'MqL');
+                win = win.replace(/ဆြေ/g, 'aMq');
+                win = win.replace(/ဆြဲ/g, 'BqJ');
+                win = win.replace(/ဆြံ/g, 'MqH');
+                win = win.replace(/ဆြ့/g, 'Mqh');
+                win = win.replace(/ဆြွ/g, '<q');
+
+                // ဇ combinations
+                win = win.replace(/ဇြို/g, 'NZdK');
+                win = win.replace(/ဇြိူ/g, 'NZdL');
+                win = win.replace(/ဇြိ/g, 'NZd');
+                win = win.replace(/ဇြီ/g, 'NZD');
+                win = win.replace(/ဇြု/g, 'jZK');
+                win = win.replace(/ဇြူ/g, 'jZL');
+                win = win.replace(/ဇြေ/g, 'ajZ');
+                win = win.replace(/ဇြဲ/g, 'NZJ');
+                win = win.replace(/ဇြံ/g, 'jZH');
+                win = win.replace(/ဇြ့/g, 'jZh');
+                win = win.replace(/ဇြွ/g, '>Z');
+
+                // ည combinations
+                win = win.replace(/ညွှ/g, 'ò');
+
+                // ဏ combinations
+                win = win.replace(/ဏြိ/g, 'BPd');
+                win = win.replace(/ဏြီ/g, 'BPD');
+                win = win.replace(/ဏြု/g, 'MPK');
+                win = win.replace(/ဏြူ/g, 'MPL');
+                win = win.replace(/ဏြေ/g, 'aMP');
+                win = win.replace(/ဏြဲ/g, 'BPJ');
+                win = win.replace(/ဏြံ/g, 'MPH');
+                win = win.replace(/ဏြ့/g, 'MPh');
+                win = win.replace(/ဏြား/g, 'MPm;');
+
+                // တ combinations
+                win = win.replace(/တြိ/g, 'Bwd');
+                win = win.replace(/တြီ/g, 'BwD');
+                win = win.replace(/တြု/g, 'MwK');
+                win = win.replace(/တြူ/g, 'MwL');
+                win = win.replace(/တြေ/g, 'aMw');
+                win = win.replace(/တြဲ/g, 'BwJ');
+                win = win.replace(/တြံ/g, 'MwH');
+                win = win.replace(/တြ့/g, 'Mwh');
+                win = win.replace(/တြား/g, 'Mwm;');
+
+                // ထ combinations
+                win = win.replace(/ထြိ/g, 'Bxd');
+                win = win.replace(/ထြီ/g, 'BxD');
+                win = win.replace(/ထြု/g, 'MxK');
+                win = win.replace(/ထြူ/g, 'MxL');
+                win = win.replace(/ထြေ/g, 'aMx');
+                win = win.replace(/ထြဲ/g, 'BxJ');
+                win = win.replace(/ထြံ/g, 'MxH');
+                win = win.replace(/ထြ့/g, 'Mxh');
+                win = win.replace(/ထြား/g, 'Mxm;');
+
+                // ဒ combinations
+                win = win.replace(/ဒြိ/g, 'N\'d');
+                win = win.replace(/ဒြီ/g, 'N\'D');
+                win = win.replace(/ဒြု/g, 'j\'K');
+                win = win.replace(/ဒြူ/g, 'j\'L');
+                win = win.replace(/ဒြေ/g, 'aj\'');
+                win = win.replace(/ဒြဲ/g, 'N\'J');
+                win = win.replace(/ဒြံ/g, 'j\'H');
+                win = win.replace(/ဒြ့/g, 'j\'h');
+                win = win.replace(/ဒြား/g, 'j\'m;');
+
+                // ဓ combinations
+                win = win.replace(/ဓြိ/g, 'N"d');
+                win = win.replace(/ဓြီ/g, 'N"D');
+                win = win.replace(/ဓြု/g, 'j"K');
+                win = win.replace(/ဓြူ/g, 'j"L');
+                win = win.replace(/ဓြေ/g, 'aj"');
+                win = win.replace(/ဓြဲ/g, 'N"J');
+                win = win.replace(/ဓြံ/g, 'j"H');
+                win = win.replace(/ဓြ့/g, 'j"h');
+                win = win.replace(/ဓြား/g, 'j"m;');
+
+                // န combinations
+                win = win.replace(/နြိ/g, 'NEd');
+                win = win.replace(/နြီ/g, 'NED');
+                win = win.replace(/နြု/g, 'jEK');
+                win = win.replace(/နြူ/g, 'jEL');
+                win = win.replace(/နြေ/g, 'aEe');
+                win = win.replace(/နြဲ/g, 'NEJ');
+                win = win.replace(/နြံ/g, 'jEH');
+                win = win.replace(/နြ့/g, 'jEh');
+                win = win.replace(/နြား/g, 'jEm;');
+
+                // ပ combinations
+                win = win.replace(/ပြိ/g, 'Nyd');
+                win = win.replace(/ပြီ/g, 'NyD');
+                win = win.replace(/ပြု/g, 'jyK');
+                win = win.replace(/ပြူ/g, 'jyL');
+                win = win.replace(/ပြေ/g, 'ajy');
+                win = win.replace(/ပြဲ/g, 'NyJ');
+                win = win.replace(/ပြံ/g, 'jyH');
+                win = win.replace(/ပြ့/g, 'jyh');
+                win = win.replace(/ပြွ/g, '>y');
+
+                // ဖ combinations
+                win = win.replace(/ဖြို/g, 'NzdK');
+                win = win.replace(/ဖြိူ/g, 'NzdL');
+                win = win.replace(/ဖြိ/g, 'Nzd');
+                win = win.replace(/ဖြီ/g, 'NzD');
+                win = win.replace(/ဖြု/g, 'jzK');
+                win = win.replace(/ဖြူ/g, 'jzL');
+                win = win.replace(/ဖြေ/g, 'ajz');
+                win = win.replace(/ဖြဲ/g, 'NzJ');
+                win = win.replace(/ဖြံ/g, 'jzH');
+                win = win.replace(/ဖြ့/g, 'jzh');
+                win = win.replace(/ဖြွ/g, '>z');
+
+                // ဗ combinations
+                win = win.replace(/ဗြို/g, 'NAdK');
+                win = win.replace(/ဗြိူ/g, 'NAdL');
+                win = win.replace(/ဗြိ/g, 'NAd');
+                win = win.replace(/ဗြီ/g, 'NAD');
+                win = win.replace(/ဗြု/g, 'jAK');
+                win = win.replace(/ဗြူ/g, 'jAL');
+                win = win.replace(/ဗြေ/g, 'ajA');
+                win = win.replace(/ဗြဲ/g, 'NAJ');
+                win = win.replace(/ဗြံ/g, 'jAH');
+                win = win.replace(/ဗြ့/g, 'jAh');
+                win = win.replace(/ဗြွ/g, '>A');
+
+                // ဘ combinations
+                win = win.replace(/ဘြို/g, 'BbdK');
+                win = win.replace(/ဘြိူ/g, 'BbdL');
+                win = win.replace(/ဘြိ/g, 'Bbd');
+                win = win.replace(/ဘြီ/g, 'BbD');
+                win = win.replace(/ဘြု/g, 'MbK');
+                win = win.replace(/ဘြူ/g, 'MbL');
+                win = win.replace(/ဘြေ/g, 'aMb');
+                win = win.replace(/ဘြဲ/g, 'BbJ');
+                win = win.replace(/ဘြံ/g, 'MbH');
+                win = win.replace(/ဘြ့/g, 'Mbh');
+                win = win.replace(/ဘြွ/g, '<b');
+
+                // မ combinations
+                win = win.replace(/မြို/g, 'NrdK');
+                win = win.replace(/မြိူ/g, 'NrdL');
+                win = win.replace(/မြိ/g, 'Nrd');
+                win = win.replace(/မြီ/g, 'NrD');
+                win = win.replace(/မြု/g, 'jrK');
+                win = win.replace(/မြူ/g, 'jrL');
+                win = win.replace(/မြေ/g, 'ajr');
+                win = win.replace(/မြဲ/g, 'NrJ');
+                win = win.replace(/မြံ/g, 'jrH');
+                win = win.replace(/မြ့/g, 'jrh');
+                win = win.replace(/မြွ/g, '>r');
+
+                // ယ combinations
+                win = win.replace(/ယြို/g, 'B,dK');
+                win = win.replace(/ယြိူ/g, 'B,dL');
+                win = win.replace(/ယြိ/g, 'B,d');
+                win = win.replace(/ယြီ/g, 'B,D');
+                win = win.replace(/ယြု/g, 'M,K');
+                win = win.replace(/ယြူ/g, 'M,L');
+                win = win.replace(/ယြေ/g, 'aM,');
+                win = win.replace(/ယြဲ/g, 'B,J');
+                win = win.replace(/ယြံ/g, 'M,H');
+                win = win.replace(/ယြ့/g, 'M,h');
+                win = win.replace(/ယြွ/g, '<,');
+
+                // ရ combinations
+                win = win.replace(/ရဲ့/g, '&JU');
+                win = win.replace(/ရု/g, 'ï');
+                win = win.replace(/ရူ/g, 'î');
+                win = win.replace(/ရျု/g, 'Ò');
+                win = win.replace(/ရျူ/g, '½SL');
+                win = win.replace(/ရွ/g, 'Ô');
+                win = win.replace(/ရွှ/g, 'Õ');
+
+                // လ combinations
+                win = win.replace(/င်္လ/g, 'vF');
+                win = win.replace(/လြိ/g, 'Bvd');
+                win = win.replace(/လြီ/g, 'BvD');
+                win = win.replace(/လြု/g, 'MvK');
+                win = win.replace(/လြူ/g, 'MvL');
+                win = win.replace(/လြေ/g, 'aMv');
+                win = win.replace(/လြဲ/g, 'BvJ');
+                win = win.replace(/လြံ/g, 'MvH');
+                win = win.replace(/လြ့/g, 'Mvh');
+                win = win.replace(/လြွ/g, '<v');
+
+                // ဝ combinations
+                win = win.replace(/င်္ဝ/g, '0F');
+
+                // Basic consonants
+                win = win.replace(/က/g, 'u');
+                win = win.replace(/ခ/g, 'c');
+                win = win.replace(/ဂ/g, '*');
+                win = win.replace(/ဃ/g, 'C');
+                win = win.replace(/င/g, 'i');
+                win = win.replace(/စ/g, 'p');
+                win = win.replace(/ဆ/g, 'q');
+                win = win.replace(/ဇ/g, 'Z');
+                win = win.replace(/ဈ/g, 'ps');
+                win = win.replace(/ည/g, 'n');
+                win = win.replace(/ဋ/g, '#');
+                win = win.replace(/ဌ/g, 'X');
+                win = win.replace(/ဍ/g, '!');
+                win = win.replace(/ဎ/g, 'X');
+                win = win.replace(/ဏ/g, 'P');
+                win = win.replace(/တ/g, 'w');
+                win = win.replace(/ထ/g, 'x');
+                win = win.replace(/ဒ/g, '\'');
+                win = win.replace(/ဓ/g, '"');
+                win = win.replace(/န/g, 'e');
+                win = win.replace(/ပ/g, 'y');
+                win = win.replace(/ဖ/g, 'z');
+                win = win.replace(/ဗ/g, 'A');
+                win = win.replace(/ဘ/g, 'b');
+                win = win.replace(/မ/g, 'r');
+                win = win.replace(/ယ/g, ',');
+                win = win.replace(/ရ/g, '&');
+                win = win.replace(/လ/g, 'v');
+                win = win.replace(/ဝ/g, '0');
+                win = win.replace(/သ/g, 'o');
+                win = win.replace(/ဟ/g, '[');
+                win = win.replace(/ဠ/g, 'V');
+                win = win.replace(/အ/g, 't');
+                win = win.replace(/ဣ/g, 'd');
+                win = win.replace(/ဤ/g, 'D');
+                win = win.replace(/ဥ/g, 'O');
+                win = win.replace(/ဦ/g, 'OD');
+                win = win.replace(/ဧ/g, '{');
+                win = win.replace(/ဩ/g, 'Mo');
+                win = win.replace(/ဪ/g, 'aMo');
+
+                // Vowels and medials
+                win = win.replace(/ာ/g, 'm');
+                win = win.replace(/ါ/g, 'g');
+                win = win.replace(/ိ/g, 'd');
+                win = win.replace(/ီ/g, 'D');
+                win = win.replace(/ု/g, 'k');
+                win = win.replace(/ူ/g, 'l');
+                win = win.replace(/ေ/g, 'a');
+                win = win.replace(/ဲ/g, 'J');
+                win = win.replace(/်/g, 'f');
+                win = win.replace(/ျ/g, 's');
+                win = win.replace(/ြ/g, 'j');
+                win = win.replace(/ွ/g, 'G');
+                win = win.replace(/ှ/g, 'S');
+                win = win.replace(/ဿ/g, '~');
+
+                // Special characters and symbols
+                win = win.replace(/၊/g, '?');
+                win = win.replace(/။/g, '/');
+                win = win.replace(/၀/g, '0');
+                win = win.replace(/၁/g, '1');
+                win = win.replace(/၂/g, '2');
+                win = win.replace(/၃/g, '3');
+                win = win.replace(/၄/g, '4');
+                win = win.replace(/၅/g, '5');
+                win = win.replace(/၆/g, '6');
+                win = win.replace(/၇/g, '7');
+                win = win.replace(/၈/g, '8');
+                win = win.replace(/၉/g, '9');
+
+                // Special combinations
+                win = win.replace(/ျွ/g, 'GS');
+                win = win.replace(/ြွ/g, 'jG');
+                win = win.replace(/ှု/g, 'SK');
+                win = win.replace(/ို/g, 'dk');
+                win = win.replace(/ော/g, 'amf');
+                win = win.replace(/ေါ/g, 'ag');
+                win = win.replace(/ဉ်/g, 'Of');
+                win = win.replace(/ည်/g, 'nf');
+                win = win.replace(/န်/g, 'ef');
+                win = win.replace(/မ်/g, 'rf');
+                win = win.replace(/ဣ/g, 'd');
+                win = win.replace(/ဤ/g, 'D');
+                win = win.replace(/ု်/g, 'kf');
+                win = win.replace(/ူ်/g, 'lf');
+                win = win.replace(/ေ့/g, 'ah');
+                win = win.replace(/ဲ့/g, 'Jh');
+                win = win.replace(/ွှ/g, 'GS');
+                win = win.replace(/ှွ/g, 'SG');
+                win = win.replace(/ျှ/g, 'sS');
+                win = win.replace(/ြှ/g, 'jS');
+
+                winTextarea.value = win;
+            } catch (error) {
+                showError('Error converting text');
             }
-            
-            // Use only local font - remove all CDN references
-            const winStyle = document.createElement('style');
-            winStyle.textContent = `
-                @font-face {
-                    font-family: 'Win Innwa';
-                    src: url('./fonts/Win_Innwa.ttf') format('truetype');
-                    font-weight: normal;
-                    font-style: normal;
-                    font-display: block;
-                }
-            `;
-            document.head.appendChild(winStyle);
-            
-            // Create preloaders for fonts
-            const preloadZawgyi = document.createElement('div');
-            preloadZawgyi.style.fontFamily = 'Zawgyi-One';
-            preloadZawgyi.style.visibility = 'hidden';
-            preloadZawgyi.textContent = 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?';
-            document.body.appendChild(preloadZawgyi);
-            
-            const preloadWin = document.createElement('div');
-            preloadWin.style.fontFamily = 'Win Innwa';
-            preloadWin.style.visibility = 'hidden';
-            preloadWin.textContent = 'awG rwufatmifjyifqifNyD;NyDvm;?';
-            document.body.appendChild(preloadWin);
-            
-            // Forcefully apply Win Innwa font to the textarea
-            document.getElementById('win').style.cssText = `
-                font-family: 'Win Innwa' !important;
-                font-size: 16px;
-                line-height: 1.5;
-            `;
-        };
+        });
+
+        // Zawgyi to Unicode conversion
+        zawgyiTextarea.addEventListener('input', () => {
+            try {
+                const zawgyi = zawgyiTextarea.value;
+                const unicode = Rabbit.zg2uni(zawgyi);
+                unicodeTextarea.value = unicode;
+            } catch (error) {
+                showError('Error converting text');
+            }
+        });
     </script>
 </body>
 </html> 

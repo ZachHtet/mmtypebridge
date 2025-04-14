@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MM Type Bridge</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        textarea { width: 300px; height: 100px; margin: 10px; }
+        button { margin: 5px; }
+        #error { color: red; display: none; }
+        
+        #zawgyi { 
+            font-family: 'Zawgyi-One', sans-serif !important; 
+            font-size: 16px; 
+            line-height: 1.5; 
+            direction: ltr; 
+            unicode-bidi: embed;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        
+        #win {
+            font-family: 'Win Innwa', 'WinInnwa', 'Win', sans-serif !important;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+    <!-- Use local font files from your GitHub repository for Zawgyi -->
+    <style>
+        @font-face {
+            font-family: 'Zawgyi-One';
+            src: url('./fonts/Zawgyi-One.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Win Innwa';
+            src: url('./fonts/W49.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+    <!-- Add a direct link to a known working Win Innwa font -->
+    <link href="https://fonts.cdnfonts.com/css/win-innwa" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/rabbit-node@1.0.2/lib/rabbit.min.js"></script>
+</head>
+<body>
+    <h1>Burmese Font Converter</h1>
+    <div>
+        <label>Unicode</label><br>
+        <textarea id="unicode" placeholder="သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။"></textarea>
+    </div>
+    <div>
+        <label>Zawgyi (using Zawgyi-One font)</label><br>
+        <textarea id="zawgyi" placeholder="သီဟိုဠ္မွ ဉာဏ္ႀကီးရွင္သည္ အာယုဝဍ္ဎနေဆးၫႊန္းစာကို ဇလြန္ေဈးေဘး ဗာဒံပင္ထက္ အဓိ႒ာန္လ်က္ ဂဃနဏဖတ္ခဲ့သည္။"></textarea>
+    </div>
+    <div>
+        <label>Win Innwa (English characters)</label><br>
+        <textarea id="win" placeholder="od[dkVfrS ÓPfBuD;&Sifonf tm,k0¡eaq;nTef;pmudk ZvGefaps;ab; Am\'Hyifxuf t&quot;d|mefvsuf *Ce zwfcJhonf/"></textarea>
+    </div>
+    <div id="error"></div>
+    <div>
+        <button onclick="clearAll()">Clear</button>
+        <button onclick="copyText('unicode')">Copy Unicode</button>
+        <button onclick="copyText('zawgyi')">Copy Zawgyi</button>
+        <button onclick="copyText('win')">Copy Win</button>
+    </div>
+
+    <script>
+        // Character mapping from Zawgyi to Win Innwa
+        const zawgyiToWinChar = {
+           // Consonants
+           'က': 'u', 'ခ': 'c', 'ဂ': '*', 'ဃ': 'C', 'င': 'i', 'စ': 'p', 'ဆ': 'q', 'ဇ': 'Z', 'ဈ': 'ps', 'ဉ': 'O',
+            'ည': 'n', 'ဋ': '#', 'ဌ': 'X', 'ဍ': '!', 'ဎ': '!', 'ဏ': 'P', 'တ': 'w', 'ထ': 'x', 'ဒ': '\'', 'ဓ': '"',
+            'န': 'e', 'ပ': 'y', 'ဖ': 'z', 'ဗ': 'A', 'ဘ': 'b', 'မ': 'r', 'ယ': ',', 'ရ': '&', 'လ': 'v', 'ဝ': '0',
+            'သ': 'o', 'ဟ': '[', 'ဠ': 'V', 'အ': 't', 
+            // Vowels
+            'ါ': 'g', 'ာ': 'm', 'ိ': 'd', 'ီ': 'D', 'ု': 'k', 'ူ': 'l', 'ေ': 'a', 'ဲ': 'J', 
+            'ံ': 'H', '့': 'h', 'း': ';', '်': 'f', 'ျ': 's', 'ြ': 'j', 'ွ': 'G', 'ှ': 'S',
+            // Marks
+            '္': 'f',
+            // Numbers
+            '၀': '0', '၁': '1', '၂': '2', '၃': '3', '၄': '4', '၅': '5', '၆': '6', '၇': '7', '၈': '8', '၉': '9',
+            // Punctuation 
+            '၊': '/', '။': '?', ' ': ' ', '?': '?', '.': '.', ',': ',', '"': '"', '"': '"', '\n': '\n',
+            // Special Characters
+            '၎င်း':'4if;','ဿ': 'ó', '၍': 'í', '၌': 'Ä', '၎': '¤', '၏': '\'', 'င်္':'F','ဉာ':'ˆ','ဦ':'OD', 'ဣ':'£',
+            // Double story characters
+            // 'တ္တ': 'wå', 'န္တ': 'ç', 'မ္တ': 'é', 'ပ္တ': 'è', 'က္တ': 'ê', 'လ်တ': 'ë', 'ဝ်တ': 'ì', 'ယ်တ': 'í'
+        };
+
+        // Basic Unicode to Win Innwa mapping for common characters
+        const unicodeToWinChar = {
+            // Consonants
+            'က': 'u', 'ခ': 'c', 'ဂ': '*', 'ဃ': 'C', 'င': 'i', 'စ': 'p', 'ဆ': 'q', 'ဇ': 'Z', 'ဈ': 'ps', 'ဉ': 'O',
+            'ည': 'n', 'ဋ': '#', 'ဌ': 'X', 'ဍ': '!', 'ဎ': '!', 'ဏ': 'P', 'တ': 'w', 'ထ': 'x', 'ဒ': '\'', 'ဓ': '"',
+            'န': 'e', 'ပ': 'y', 'ဖ': 'z', 'ဗ': 'A', 'ဘ': 'b', 'မ': 'r', 'ယ': ',', 'ရ': '&', 'လ': 'v', 'ဝ': '0',
+            'သ': 'o', 'ဟ': '[', 'ဠ': 'V', 'အ': 't', 
+            // Vowels
+            'ါ': 'g', 'ာ': 'm', 'ိ': 'd', 'ီ': 'D', 'ု': 'k', 'ူ': 'l', 'ေ': 'a', 'ဲ': 'J', 
+            'ံ': 'H', '့': 'h', 'း': ';', '်': 'f', 'ျ': 's', 'ြ': 'j', 'ွ': 'G', 'ှ': 'S',
+            // Marks
+            '္': 'f',
+            // Numbers
+            '၀': '0', '၁': '1', '၂': '2', '၃': '3', '၄': '4', '၅': '5', '၆': '6', '၇': '7', '၈': '8', '၉': '9',
+            // Punctuation 
+            '၊': '/', '။': '?', ' ': ' ', '?': '?', '.': '.', ',': ',', '"': '"', '"': '"', '\n': '\n',
+            // Special Characters
+             '၎င်း':'4if;','ဿ': 'ó', '၍': 'í', '၌': 'Ä', '၎': '¤', '၏': '\'', 'င်္':'F','ဉာ':'ˆ','ဦ':'OD', 'ဣ':'£',
+            // Double story characters
+            // 'တ္တ': 'wå', 'န္တ': 'ç', 'မ္တ': 'é', 'ပ္တ': 'è', 'က္တ': 'ê', 'လ်တ': 'ë', 'ဝ်တ': 'ì', 'ယ်တ': 'í'
+        };
+
+        const unicodeBox = document.getElementById('unicode');
+        const zawgyiBox = document.getElementById('zawgyi');
+        const winBox = document.getElementById('win');
+        const errorDiv = document.getElementById('error');
+
+        function error({ name, message }) {
+            console.error(`Error [${name}]: ${message}`);
+            errorDiv.textContent = `Error: ${message}`;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        // Function to handle Ra Medial + U vowel combinations
+        function handleYaPintCombinations(text) {
+            // This regex matches Ra Medial followed by U vowels
+            return text.replace(/(ျ)(ု|ူ)/g, function(match, ra, u) {
+                // Convert to Win-Innwa format
+                return u === 'ု' ? 'sK' : 'sL';
+            });
+        }
+
+        
+        // Helper function to escape special characters in regex
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
+        // Helper function to split text into Burmese and non-Burmese segments
+        function splitTextByLanguage(text) {
+            const segments = [];
+            let currentSegment = { text: '', isEnglish: false };
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const charCode = text.charCodeAt(i);
+                
+                // Check if character is English/Latin or other non-Burmese character
+                const isEnglishChar = (charCode >= 32 && charCode <= 126) && 
+                                     !(char in zawgyiToWinChar);
+                
+                if (currentSegment.text === '' || isEnglishChar === currentSegment.isEnglish) {
+                    // Continue current segment
+                    currentSegment.text += char;
+                } else {
+                    // Start new segment
+                    segments.push(currentSegment);
+                    currentSegment = { text: char, isEnglish: isEnglishChar };
+                }
+            }
+            
+            // Add the last segment
+            if (currentSegment.text !== '') {
+                segments.push(currentSegment);
+            }
+            
+            return segments;
+        }
+        // Function to reorder င်္ with adjacent characters
+        function reorderNgaThat(text) {
+            // This regex matches င်္ followed by any Myanmar character
+            return text.replace(/(င်္)([\u1000-\u109F])/g, '$2$1');
+        }
+
+        function winToZawgyiText(win) {
+            try {
+                // This is a placeholder - a complete implementation would need a reverse mapping
+                return win;
+            } catch (e) {
+                throw new Error(`Win to Zawgyi conversion failed: ${e.message}`);
+            }
+        }
+
+        // Direct Unicode to Win Innwa conversion function
+        function unicodeToWinText(unicode) {
+            try {
+                // Handle Ra Medial + U vowel combinations first
+                unicode = handleYaPintCombinations(unicode);
+
+                // Reorder င်္ characters first
+                unicode = reorderNgaThat(unicode);
+
+                // Handle double story characters first
+                unicode = unicode.replace(/င်္/g, 'F');
+                unicode = unicode.replace(/္တ/g, 'å');
+                unicode = unicode.replace(/္ထ/g, '¦');
+                unicode = unicode.replace(/္ဓ/g, '¨');
+                unicode = unicode.replace(/္ခ/g, '©');
+                unicode = unicode.replace(/္မ/g, '®');
+                unicode = unicode.replace(/္ဆ/g, '°');
+                unicode = unicode.replace(/္ဒ/g, '´');
+                unicode = unicode.replace(/္ဗ/g, 'º');
+                unicode = unicode.replace(/္ဂ/g, '¾');
+                unicode = unicode.replace(/္ဇ/g, 'Æ');
+                unicode = unicode.replace(/္ဘ/g, 'Ç');
+                unicode = unicode.replace(/္ဏ/g, 'Ö');
+                unicode = unicode.replace(/္ပ/g, 'Ü');
+                unicode = unicode.replace(/္ဖ/g, 'æ');
+                unicode = unicode.replace(/္န/g, 'é');
+                unicode = unicode.replace(/္ဎ/g, '·');
+                unicode = unicode.replace(/င်္ဂြိို/g, 'ì');
+                unicode = unicode.replace(/ဏ္ဍ/g, '‹');
+                
+                // Complex combinations with multiple vowels
+                // In these examples, Ra Medial is followed by vowels
+                unicode = unicode.replace(/ကြုံ/g, 'MuHK');
+                unicode = unicode.replace(/ကြီး/g, 'BuD;');
+                unicode = unicode.replace(/ကြို/g, 'BudK');
+                unicode = unicode.replace(/ကြိူ/g, 'BudL');
+                unicode = unicode.replace(/ကြိ/g, 'Bud');                
+                unicode = unicode.replace(/ကြီ/g, 'BuD');
+                // unicode = unicode.replace(/ကြု/g, 'MuK');
+                unicode = unicode.replace(/ကြူ/g, 'MuL');
+                unicode = unicode.replace(/ကြေ/g, 'aMu');
+                unicode = unicode.replace(/ကြဲ/g, 'BuJ');
+                
+                unicode = unicode.replace(/ကြံ/g, 'MuH');
+                unicode = unicode.replace(/ကြ့/g, 'Muh');
+                unicode = unicode.replace(/ကြွ/g, '<u');
+                
+                // Similar patterns for other consonants with Ra Medial + vowels
+                unicode = unicode.replace(/ခြို/g, 'NcdK');
+                unicode = unicode.replace(/ခြိူ/g, 'NcdL');
+                unicode = unicode.replace(/ခြိ/g, 'Ncd');
+                unicode = unicode.replace(/ခြီ/g, 'NcD');
+                // unicode = unicode.replace(/ခြု/g, 'jcK');
+                // unicode = unicode.replace(/ခြူ/g, 'jcL');
+                unicode = unicode.replace(/ခြေ/g, 'ajc');
+                unicode = unicode.replace(/ခြဲ/g, 'NcJ');
+                unicode = unicode.replace(/ခြံ/g, 'jcH');
+                unicode = unicode.replace(/ခြ့/g, 'jch');
+                unicode = unicode.replace(/ခြွ/g, '>c');
+                
+                // ဂ combinations
+                unicode = unicode.replace(/ဂြို/g, 'N*dK');
+                unicode = unicode.replace(/ဂြိူ/g, 'N*dL');
+                unicode = unicode.replace(/ဂြိ/g, 'N*d');
+                unicode = unicode.replace(/ဂြီ/g, 'N*D');
+                unicode = unicode.replace(/ဂြု/g, 'j*K');
+                unicode = unicode.replace(/ဂြူ/g, 'j*L');
+                unicode = unicode.replace(/ဂြေ/g, 'aj*');
+                unicode = unicode.replace(/ဂြဲ/g, 'N*J');
+                unicode = unicode.replace(/ဂြံ/g, 'j*H');
+                unicode = unicode.replace(/ဂြ့/g, 'j*h');
+                unicode = unicode.replace(/ဂြွ/g, '>*');
+                
+                // ဃ combinations
+                // unicode = unicode.replace(/ဃြို/g, 'N*dK');
+                unicode = unicode.replace(/င်္ဃ/g, 'CF');
+                unicode = unicode.replace(/ဃြိ/g, 'BCd');
+                unicode = unicode.replace(/ဃြီ/g, 'BCD');
+                unicode = unicode.replace(/ဃြု/g, 'MCK');
+                unicode = unicode.replace(/ဃြူ/g, 'MCL');
+                unicode = unicode.replace(/ဃြေ/g, 'aMC');
+                unicode = unicode.replace(/ဃြဲ/g, 'BCJ');
+                unicode = unicode.replace(/ဃြံ/g, 'MCH');
+                unicode = unicode.replace(/ဃြ့/g, 'MCh');
+                unicode = unicode.replace(/ဃြွ/g, '<C');
+                
+                // င combinations
+                unicode = unicode.replace(/ငြို/g, 'NidK');
+                unicode = unicode.replace(/ငြိူ/g, 'NidL');
+                unicode = unicode.replace(/ငြိ/g, 'Nid');
+                unicode = unicode.replace(/ငြီ/g, 'NiD');
+                unicode = unicode.replace(/ငြု/g, 'jiK');
+                unicode = unicode.replace(/ငြူ/g, 'jiL');
+                unicode = unicode.replace(/ငြေ/g, 'aji');
+                unicode = unicode.replace(/ငြဲ/g, 'NiJ');
+                unicode = unicode.replace(/ငြံ/g, 'jiH');
+                unicode = unicode.replace(/ငြ့/g, 'jih');
+                unicode = unicode.replace(/ငြွ/g, '>i');
+                
+                // စ combinations
+                unicode = unicode.replace(/စြို/g, 'NpdK');
+                unicode = unicode.replace(/စြိူ/g, 'NpdL');
+                unicode = unicode.replace(/စြိ/g, 'Npd');
+                unicode = unicode.replace(/စြီ/g, 'NpD');
+                unicode = unicode.replace(/စြု/g, 'jpK');
+                unicode = unicode.replace(/စြူ/g, 'jpL');
+                unicode = unicode.replace(/စြေ/g, 'ajp');
+                unicode = unicode.replace(/စြဲ/g, 'NpJ');
+                unicode = unicode.replace(/စြံ/g, 'jpH');
+                unicode = unicode.replace(/စြ့/g, 'jph');
+                unicode = unicode.replace(/စြား/g, 'jpm;');
+                unicode = unicode.replace(/စြွ/g, '>p');
+                
+                // ဆ combinations
+                unicode = unicode.replace(/ဆြို/g, 'BqdK');
+                unicode = unicode.replace(/ဆြိ/g, 'Bqd');
+                unicode = unicode.replace(/ဆြီ/g, 'BqD');
+                unicode = unicode.replace(/ဆြု/g, 'MqK');
+                unicode = unicode.replace(/ဆြူ/g, 'MqL');
+                unicode = unicode.replace(/ဆြေ/g, 'aMq');
+                unicode = unicode.replace(/ဆြဲ/g, 'BqJ');
+                unicode = unicode.replace(/ဆြံ/g, 'MqH');
+                unicode = unicode.replace(/ဆြ့/g, 'Mqh');
+                unicode = unicode.replace(/ဆြွ/g, '<q');
+                
+                // ဇ combinations
+                unicode = unicode.replace(/ဇြို/g, 'NZdK');
+                unicode = unicode.replace(/ဇြိူ/g, 'NZdL');
+                unicode = unicode.replace(/ဇြိ/g, 'NZd');
+                unicode = unicode.replace(/ဇြီ/g, 'NZD');
+                unicode = unicode.replace(/ဇြု/g, 'jZK');
+                unicode = unicode.replace(/ဇြူ/g, 'jZL');
+                unicode = unicode.replace(/ဇြေ/g, 'ajZ');
+                unicode = unicode.replace(/ဇြဲ/g, 'NZJ');
+                unicode = unicode.replace(/ဇြံ/g, 'jZH');
+                unicode = unicode.replace(/ဇြ့/g, 'jZh');
+                unicode = unicode.replace(/ဇြွ/g, '>Z');
+                
+                // ည combinations
+                unicode = unicode.replace(/ညွှ/g, 'ò');
+                
+                
+                // ဏ combinations
+                unicode = unicode.replace(/ဏြိ/g, 'BPd');
+                unicode = unicode.replace(/ဏြီ/g, 'BPD');
+                unicode = unicode.replace(/ဏြု/g, 'MPK');
+                unicode = unicode.replace(/ဏြူ/g, 'MPL');
+                unicode = unicode.replace(/ဏြေ/g, 'aMP');
+                unicode = unicode.replace(/ဏြဲ/g, 'BPJ');
+                unicode = unicode.replace(/ဏြံ/g, 'MPH');
+                unicode = unicode.replace(/ဏြ့/g, 'MPh');
+                unicode = unicode.replace(/ဏြား/g, 'MPm;');
+                
+                // တ combinations
+                unicode = unicode.replace(/တြိ/g, 'Bwd');
+                unicode = unicode.replace(/တြီ/g, 'BwD');
+                unicode = unicode.replace(/တြု/g, 'MwK');
+                unicode = unicode.replace(/တြူ/g, 'MwL');
+                unicode = unicode.replace(/တြေ/g, 'aMw');
+                unicode = unicode.replace(/တြဲ/g, 'BwJ');
+                unicode = unicode.replace(/တြံ/g, 'MwH');
+                unicode = unicode.replace(/တြ့/g, 'Mwh');
+                unicode = unicode.replace(/တြား/g, 'Mwm;');
+                
+                // ထ combinations
+                unicode = unicode.replace(/ထြိ/g, 'Bxd');
+                unicode = unicode.replace(/ထြီ/g, 'BxD');
+                unicode = unicode.replace(/ထြု/g, 'MxK');
+                unicode = unicode.replace(/ထြူ/g, 'MxL');
+                unicode = unicode.replace(/ထြေ/g, 'aMx');
+                unicode = unicode.replace(/ထြဲ/g, 'BxJ');
+                unicode = unicode.replace(/ထြံ/g, 'MxH');
+                unicode = unicode.replace(/ထြ့/g, 'Mxh');
+                unicode = unicode.replace(/ထြား/g, 'Mxm;');
+                
+                // ဒ combinations
+                unicode = unicode.replace(/ဒြိ/g, 'N\'d');
+                unicode = unicode.replace(/ဒြီ/g, 'N\'D');
+                unicode = unicode.replace(/ဒြု/g, 'j\'K');
+                unicode = unicode.replace(/ဒြူ/g, 'j\'L');
+                unicode = unicode.replace(/ဒြေ/g, 'aj\'');
+                unicode = unicode.replace(/ဒြဲ/g, 'N\'J');
+                unicode = unicode.replace(/ဒြံ/g, 'j\'H');
+                unicode = unicode.replace(/ဒြ့/g, 'j\'h');
+                unicode = unicode.replace(/ဒြား/g, 'j\'m;');
+                
+                // ဓ combinations
+                unicode = unicode.replace(/ဓြိ/g, 'N"d');
+                unicode = unicode.replace(/ဓြီ/g, 'N"D');
+                unicode = unicode.replace(/ဓြု/g, 'j"K');
+                unicode = unicode.replace(/ဓြူ/g, 'j"L');
+                unicode = unicode.replace(/ဓြေ/g, 'aj"');
+                unicode = unicode.replace(/ဓြဲ/g, 'N"J');
+                unicode = unicode.replace(/ဓြံ/g, 'j"H');
+                unicode = unicode.replace(/ဓြ့/g, 'j"h');
+                unicode = unicode.replace(/ဓြား/g, 'j"m;');
+                
+                // န combinations
+                unicode = unicode.replace(/နြိ/g, 'NEd');
+                unicode = unicode.replace(/နြီ/g, 'NED');
+                unicode = unicode.replace(/နြု/g, 'jEK');
+                unicode = unicode.replace(/နြူ/g, 'jEL');
+                unicode = unicode.replace(/နြေ/g, 'aEe');
+                unicode = unicode.replace(/နြဲ/g, 'NEJ');
+                unicode = unicode.replace(/နြံ/g, 'jEH');
+                unicode = unicode.replace(/နြ့/g, 'jEh');
+                unicode = unicode.replace(/နြား/g, 'jEm;');
+                
+                // ပ combinations
+                unicode = unicode.replace(/ပြိ/g, 'Nyd');
+                unicode = unicode.replace(/ပြီ/g, 'NyD');
+                unicode = unicode.replace(/ပြု/g, 'jyK');
+                unicode = unicode.replace(/ပြူ/g, 'jyL');
+                unicode = unicode.replace(/ပြေ/g, 'ajy');
+                unicode = unicode.replace(/ပြဲ/g, 'NyJ');
+                unicode = unicode.replace(/ပြံ/g, 'jyH');
+                unicode = unicode.replace(/ပြ့/g, 'jyh');
+                unicode = unicode.replace(/ပြွ/g, '>y');
+                
+                // ဖ combinations
+                unicode = unicode.replace(/ဖြို/g, 'NzdK');
+                unicode = unicode.replace(/ဖြိူ/g, 'NzdL');
+                unicode = unicode.replace(/ဖြိ/g, 'Nzd');
+                unicode = unicode.replace(/ဖြီ/g, 'NzD');
+                unicode = unicode.replace(/ဖြု/g, 'jzK');
+                unicode = unicode.replace(/ဖြူ/g, 'jzL');
+                unicode = unicode.replace(/ဖြေ/g, 'ajz');
+                unicode = unicode.replace(/ဖြဲ/g, 'NzJ');
+                unicode = unicode.replace(/ဖြံ/g, 'jzH');
+                unicode = unicode.replace(/ဖြ့/g, 'jzh');
+                unicode = unicode.replace(/ဖြွ/g, '>z');
+                
+                // ဗ combinations
+                unicode = unicode.replace(/ဗြို/g, 'NAdK');
+                unicode = unicode.replace(/ဗြိူ/g, 'NAdL');
+                unicode = unicode.replace(/ဗြိ/g, 'NAd');
+                unicode = unicode.replace(/ဗြီ/g, 'NAD');
+                unicode = unicode.replace(/ဗြု/g, 'jAK');
+                unicode = unicode.replace(/ဗြူ/g, 'jAL');
+                unicode = unicode.replace(/ဗြေ/g, 'ajA');
+                unicode = unicode.replace(/ဗြဲ/g, 'NAJ');
+                unicode = unicode.replace(/ဗြံ/g, 'jAH');
+                unicode = unicode.replace(/ဗြ့/g, 'jAh');
+                unicode = unicode.replace(/ဗြား/g, 'jAm;');
+                
+                // ဘ combinations
+                unicode = unicode.replace(/ဘြိ/g, 'Bbd');
+                unicode = unicode.replace(/ဘြီ/g, 'BbD');
+                unicode = unicode.replace(/ဘြု/g, 'MbK');
+                unicode = unicode.replace(/ဘြူ/g, 'MbL');
+                unicode = unicode.replace(/ဘြေ/g, 'aMb');
+                unicode = unicode.replace(/ဘြဲ/g, 'BbJ');
+                unicode = unicode.replace(/ဘြံ/g, 'MbH');
+                unicode = unicode.replace(/ဘြ့/g, 'Mbh');
+                unicode = unicode.replace(/ဘြား/g, 'Mbm;');
+                
+                // မ combinations
+                unicode = unicode.replace(/မြိ/g, 'Nrd');
+                unicode = unicode.replace(/မြီ/g, 'NrD');
+                unicode = unicode.replace(/မြု/g, 'jrK');
+                unicode = unicode.replace(/မြူ/g, 'jrL');
+                unicode = unicode.replace(/မြေ/g, 'ajr');
+                unicode = unicode.replace(/မြဲ/g, 'NrJ');
+                unicode = unicode.replace(/မြံ/g, 'jrH');
+                unicode = unicode.replace(/မြ့/g, 'jrh');
+                unicode = unicode.replace(/မြား/g, 'jrm;');
+                
+                // ယ combinations
+                unicode = unicode.replace(/ယြိ/g, 'B,d');
+                unicode = unicode.replace(/ယြီ/g, 'B,D');
+                unicode = unicode.replace(/ယြု/g, 'M,K');
+                unicode = unicode.replace(/ယြူ/g, 'M,L');
+                unicode = unicode.replace(/ယြေ/g, 'aM,');
+                unicode = unicode.replace(/ယြဲ/g, 'B,J');
+                unicode = unicode.replace(/ယြံ/g, 'M,H');
+                unicode = unicode.replace(/ယြ့/g, 'M,h');
+                unicode = unicode.replace(/ယြား/g, 'M,m;');
+                
+                // ရ combinations
+                // zawgyi = zawgyi.replace(/ရြိ/g, 'N&d');
+                // zawgyi = zawgyi.replace(/ရြီ/g, 'N&D');
+                // zawgyi = zawgyi.replace(/ရြု/g, 'j&K');
+                // zawgyi = zawgyi.replace(/ရြူ/g, 'j&L');
+                // zawgyi = zawgyi.replace(/ရြေ/g, 'aj&');
+                // zawgyi = zawgyi.replace(/ရြဲ/g, 'N&J');
+                // zawgyi = zawgyi.replace(/ရြံ/g, 'j&H');
+                // zawgyi = zawgyi.replace(/ရြ့/g, 'j&h');
+                // zawgyi = zawgyi.replace(/ရြား/g, 'j&m;');
+                
+                // လ combinations
+                unicode = unicode.replace(/င်္လ/g, 'vF');
+                unicode = unicode.replace(/လြိ/g, 'Bvd');
+                unicode = unicode.replace(/လြီ/g, 'BvD');
+                unicode = unicode.replace(/လြု/g, 'MvK');
+                unicode = unicode.replace(/လြူ/g, 'MvL');
+                unicode = unicode.replace(/လြေ/g, 'aMv');
+                unicode = unicode.replace(/လြဲ/g, 'BvJ');
+                unicode = unicode.replace(/လြံ/g, 'MvH');
+                unicode = unicode.replace(/လြ့/g, 'Mvh');
+                unicode = unicode.replace(/လြွ/g, '<v');
+                
+                // ဝ combinations
+                unicode = unicode.replace(/င်္ဝ/g, '0F');
+                unicode = unicode.replace(/ဝြို/g, 'N0dK');
+                unicode = unicode.replace(/ဝြိူ/g, 'N0dL');
+                unicode = unicode.replace(/ဝြိ/g, 'N0d');
+                unicode = unicode.replace(/ဝြီ/g, 'N0D');
+                unicode = unicode.replace(/ဝြု/g, 'j0K');
+                unicode = unicode.replace(/ဝြူ/g, 'j0L');
+                unicode = unicode.replace(/ဝြေ/g, 'aj0');
+                unicode = unicode.replace(/ဝြဲ/g, 'N0J');
+                unicode = unicode.replace(/ဝြံ/g, 'j0H');
+                unicode = unicode.replace(/ဝြ့/g, 'j0h');
+                unicode = unicode.replace(/ဝြွ/g, '>0');
+                
+                // သ combinations
+                unicode = unicode.replace(/င်္သ/g, 'oF');
+                unicode = unicode.replace(/သြို/g, 'BodK');
+                unicode = unicode.replace(/သြိူ/g, 'BodL');
+                unicode = unicode.replace(/သြိ/g, 'Bod');
+                unicode = unicode.replace(/သြီ/g, 'BoD');
+                unicode = unicode.replace(/သြု/g, 'joK');
+                unicode = unicode.replace(/သြူ/g, 'joL');
+                unicode = unicode.replace(/သြေ/g, 'ajo');
+                unicode = unicode.replace(/သြဲ/g, 'BoJ');
+                unicode = unicode.replace(/သြံ/g, 'joH');
+                unicode = unicode.replace(/သြ့/g, 'joh');
+                unicode = unicode.replace(/သြွ/g, '<o');
+                
+                // ဟ combinations
+                unicode = unicode.replace(/င်္ဟ/g, '[F');
+                unicode = unicode.replace(/ဟြို/g, 'B[dK');
+                unicode = unicode.replace(/ဟြိူ/g, 'B[dL');
+                unicode = unicode.replace(/ဟြိ/g, 'B[d');
+                unicode = unicode.replace(/ဟြီ/g, 'B[D');
+                unicode = unicode.replace(/ဟြု/g, 'j[K');
+                unicode = unicode.replace(/ဟြူ/g, 'j[L');
+                unicode = unicode.replace(/ဟြေ/g, 'aj[');
+                unicode = unicode.replace(/ဟြဲ/g, 'B[J');
+                unicode = unicode.replace(/ဟြံ/g, 'j[H');
+                unicode = unicode.replace(/ဟြ့/g, 'j[h');
+                unicode = unicode.replace(/ဟြား/g, 'j[m;');
+                
+                // ဠ combinations
+                // zawgyi = zawgyi.replace(/ဠြိ/g, 'NVd');
+                // zawgyi = zawgyi.replace(/ဠြီ/g, 'NVD');
+                // zawgyi = zawgyi.replace(/ဠြု/g, 'jVK');
+                // zawgyi = zawgyi.replace(/ဠြူ/g, 'jVL');
+                // zawgyi = zawgyi.replace(/ဠြေ/g, 'ajV');
+                // zawgyi = zawgyi.replace(/ဠြဲ/g, 'NVJ');
+                // zawgyi = zawgyi.replace(/ဠြံ/g, 'jVH');
+                // zawgyi = zawgyi.replace(/ဠြ့/g, 'jVh');
+                // zawgyi = zawgyi.replace(/ဠြား/g, 'jVm;');
+                
+                // အ combinations
+                unicode = unicode.replace(/င်္အ/g, 'tF');
+                unicode = unicode.replace(/အြို/g, 'BtdK');
+                unicode = unicode.replace(/အြိူ/g, 'BtdL');
+                unicode = unicode.replace(/အြိ/g, 'Btd');
+                unicode = unicode.replace(/အြီ/g, 'BtD');
+                unicode = unicode.replace(/အြု/g, 'MtK');
+                unicode = unicode.replace(/အြူ/g, 'MtL');
+                unicode = unicode.replace(/အြေ/g, 'aMt');
+                unicode = unicode.replace(/အြဲ/g, 'BtJ');
+                unicode = unicode.replace(/အြံ/g, 'MtH');
+                unicode = unicode.replace(/အြ့/g, 'Mth');
+                unicode = unicode.replace(/အြား/g, 'Mtm;');
+                
+                // Direct replacements for Ra Medial combinations - these must come AFTER the complex combinations
+                unicode = unicode.replace(/ခြ/g, 'jc');
+                unicode = unicode.replace(/ဂြ/g, 'j*');
+                unicode = unicode.replace(/ဃြ/g, 'MC');
+                unicode = unicode.replace(/ငြ/g, 'ji');
+                unicode = unicode.replace(/စြ/g, 'jp');
+                unicode = unicode.replace(/ဆြ/g, 'Mq');
+                unicode = unicode.replace(/ဇြ/g, 'jZ');
+                unicode = unicode.replace(/ဈြ/g, 'jQ');
+                unicode = unicode.replace(/ညြ/g, 'jn');
+                unicode = unicode.replace(/ဋြ/g, 'j#');
+                unicode = unicode.replace(/ဌြ/g, 'jX');
+                unicode = unicode.replace(/ဍြ/g, 'j!');
+                unicode = unicode.replace(/ဎြ/g, 'j!');
+                unicode = unicode.replace(/ဏြ/g, 'MP');
+                unicode = unicode.replace(/တြ/g, 'Mw');
+                unicode = unicode.replace(/ထြ/g, 'Mx');
+                unicode = unicode.replace(/ဒြ/g, 'j\'');
+                unicode = unicode.replace(/ဓြ/g, 'j"');
+                unicode = unicode.replace(/နြ/g, 'je');
+                unicode = unicode.replace(/ပြ/g, 'jy');
+                unicode = unicode.replace(/ဖြ/g, 'jz');
+                unicode = unicode.replace(/ဗြ/g, 'jA');
+                unicode = unicode.replace(/ဘြ/g, 'Mb');
+                unicode = unicode.replace(/မြ/g, 'jr');
+                unicode = unicode.replace(/ယြ/g, 'M,');
+                unicode = unicode.replace(/ရြ/g, 'j&');
+                unicode = unicode.replace(/လြ/g, 'Mv');
+                unicode = unicode.replace(/ဝြ/g, 'j0');
+                unicode = unicode.replace(/သြ/g, 'jo');
+                unicode = unicode.replace(/ဟြ/g, 'j[');
+                unicode = unicode.replace(/ဠြ/g, 'jV');
+                unicode = unicode.replace(/အြ/g, 'Mt');
+                
+                // Basic Ra Medial pattern that will only match if none of the above matched
+                // unicode = unicode.replace(/ကြ/g, 'Mu');
+                
+                // Direct replacement for Ya Yit characters
+                unicode = unicode.replace(/ႀက/g, 'Bu');
+                unicode = unicode.replace(/ႀ/g, 'jB');
+                unicode = unicode.replace(/ၾက/g, 'Mu');
+                unicode = unicode.replace(/ၾ/g, 'jM');
+                unicode = unicode.replace(/ၿ/g, 'jy');
+                
+                // Character-by-character processing
+                let result = '';
+                let i = 0;
+                
+                // Add specific replacements for individual characters with E vowel
+                unicode = unicode.replace(/‌ကှေ/g, 'auS');
+                unicode = unicode.replace(/‌ခှေ/g, 'acS');
+                unicode = unicode.replace(/ဂှေ/g, 'a*S');
+                unicode = unicode.replace(/ဃေ/g, 'aCS');
+                unicode = unicode.replace(/စေ/g, 'ap');
+                unicode = unicode.replace(/ဆေ/g, 'aq');
+                unicode = unicode.replace(/ဇေ/g, 'aZS');
+                unicode = unicode.replace(/‌ညှေ/g, 'anS');
+                unicode = unicode.replace(/‌ဏှေ/g, 'aPS');
+                unicode = unicode.replace(/‌တှေ/g, 'awS');
+                unicode = unicode.replace(/‌ထှေ/g, 'axS');
+                unicode = unicode.replace(/‌‌ဒှေ/g, 'a\'S');
+                unicode = unicode.replace(/‌ဓှေ/g, 'a"S');
+                unicode = unicode.replace(/‌နှေ/g, 'aES');
+                unicode = unicode.replace(/‌ပှေ/g, 'ayS');
+                unicode = unicode.replace(/‌ဖှေ/g, 'azS');
+                unicode = unicode.replace(/‌ဗှေ/g, 'aAS');
+                unicode = unicode.replace(/‌ဘှေ/g, 'abS');
+                unicode = unicode.replace(/‌မှေ/g, 'arS');
+                unicode = unicode.replace(/‌ယှေ/g, 'a,S');
+                unicode = unicode.replace(/‌ရှေ/g, 'a&S');
+                unicode = unicode.replace(/‌လှေ/g, 'aS');
+                unicode = unicode.replace(/‌ဝှေ/g, 'a0S');
+                unicode = unicode.replace(/‌သှေ/g, 'aoS');
+                unicode = unicode.replace(/‌ဟှေ/g, 'a[S');
+                unicode = unicode.replace(/‌အှေ/g, 'atS');
+
+                // Special cases for characters with ါ် combination
+                unicode = unicode.replace(/ခေါ်/g, 'ac:');
+                unicode = unicode.replace(/ငေါ်/g, '‌ai:');
+                unicode = unicode.replace(/ဂေါ်/g, 'a*:');
+                unicode = unicode.replace(/ဒေါ်/g, 'a\':');
+                unicode = unicode.replace(/ပေါ်/g, 'ay:');
+                unicode = unicode.replace(/ဝေါ်/g, 'a0:');
+
+                //‌ေ + ှ
+                unicode = unicode.replace(/ကေ/g, 'au');
+                unicode = unicode.replace(/ခေ/g, 'ac');
+                unicode = unicode.replace(/ဂေ/g, 'a*');
+                unicode = unicode.replace(/ဃေ/g, 'aC');
+                unicode = unicode.replace(/ငေ/g, 'ai');
+                // unicode = unicode.replace(/စေ/g, 'ap');
+                // unicode = unicode.replace(/ဆေ/g, 'aq');
+                unicode = unicode.replace(/ဇေ/g, 'aZ');
+                unicode = unicode.replace(/ဈေ/g, 'aps');
+                unicode = unicode.replace(/ညေ/g, 'an');
+                unicode = unicode.replace(/ဋေ/g, 'a#');
+                unicode = unicode.replace(/ဌေ/g, 'aX');
+                unicode = unicode.replace(/ဍေ/g, 'a!');
+                unicode = unicode.replace(/ဎေ/g, 'a!');
+                unicode = unicode.replace(/ဏေ/g, 'aP');
+                unicode = unicode.replace(/တေ/g, 'aw');
+                unicode = unicode.replace(/ထေ/g, 'ax');
+                unicode = unicode.replace(/ဒေ/g, 'a\'');
+                unicode = unicode.replace(/ဓေ/g, 'a"');
+                unicode = unicode.replace(/နေ/g, 'ae');
+                unicode = unicode.replace(/ပေ/g, 'ay');
+                unicode = unicode.replace(/ဖေ/g, 'az');
+                unicode = unicode.replace(/ဗေ/g, 'aA');
+                unicode = unicode.replace(/ဘေ/g, 'ab');
+                unicode = unicode.replace(/မေ/g, 'ar');
+                unicode = unicode.replace(/ယေ/g, 'a,');
+                unicode = unicode.replace(/ရေ/g, 'a&');
+                unicode = unicode.replace(/လေ/g, 'av');
+                unicode = unicode.replace(/ဝေ/g, 'a0');
+                unicode = unicode.replace(/သေ/g, 'ao');
+                unicode = unicode.replace(/ဟေ/g, 'a[');
+                unicode = unicode.replace(/ဠေ/g, 'aV');
+                unicode = unicode.replace(/အေ/g, 'at');
+                
+                // Add specific replacements for consonant + wa hswe combinations with E vowel
+                unicode = unicode.replace(/ခေါ်/g, '‌ac:');
+                
+
+                // Add specific replacements for consonant + wa hswe combinations with E vowel
+                unicode = unicode.replace(/ကွေ/g, 'auG');
+                unicode = unicode.replace(/ခွေ/g, 'acG');
+                unicode = unicode.replace(/ဂွေ/g, 'a*G');
+                unicode = unicode.replace(/ဃွေ/g, 'aCG');
+                unicode = unicode.replace(/ငွေ/g, 'aiG');
+                unicode = unicode.replace(/စွေ/g, 'apG');
+                unicode = unicode.replace(/ဆွေ/g, 'aqG');
+                unicode = unicode.replace(/ဇွေ/g, 'aZG');
+                unicode = unicode.replace(/ဈွေ/g, 'aQG');
+                unicode = unicode.replace(/ညွေ/g, 'anG');
+                unicode = unicode.replace(/ဋွေ/g, 'a#G');
+                unicode = unicode.replace(/ဌွေ/g, 'aXG');
+                unicode = unicode.replace(/ဍွေ/g, 'a!G');
+                unicode = unicode.replace(/ဎွေ/g, 'a!G');
+                unicode = unicode.replace(/ဏွေ/g, 'aPG');
+                unicode = unicode.replace(/တွေ/g, 'awG');
+                unicode = unicode.replace(/ထွေ/g, 'axG');
+                unicode = unicode.replace(/ဒွေ/g, 'a\'G');
+                unicode = unicode.replace(/ဓွေ/g, 'a"G');
+                unicode = unicode.replace(/နွေ/g, 'aeG');
+                unicode = unicode.replace(/ပွေ/g, 'ayG');
+                unicode = unicode.replace(/ဖွေ/g, 'azG');
+                unicode = unicode.replace(/ဗွေ/g, 'aAG');
+                unicode = unicode.replace(/ဘွေ/g, 'abG');
+                unicode = unicode.replace(/မွေ/g, 'arG');
+                unicode = unicode.replace(/ယွေ/g, 'a,G');
+                unicode = unicode.replace(/ရွေ/g, 'a&G');
+                unicode = unicode.replace(/လွေ/g, 'avG');
+                unicode = unicode.replace(/ဝွေ/g, 'a0G');
+                unicode = unicode.replace(/သွေ/g, 'aoG');
+                unicode = unicode.replace(/ဟွေ/g, 'a[G');
+                unicode = unicode.replace(/ဠွေ/g, 'aVG');
+                unicode = unicode.replace(/အွေ/g, 'atG');
+                
+                // Add specific replacements for consonant + wa hswe + sha htoe combinations with E vowel
+                unicode = unicode.replace(/ကွှေ/g, 'auT');
+                unicode = unicode.replace(/ခွှေ/g, 'acT');
+                unicode = unicode.replace(/ဂွှေ/g, 'a*T');
+                unicode = unicode.replace(/ဃွှေ/g, 'aCT');
+                unicode = unicode.replace(/ငွှေ/g, 'aiT');
+                unicode = unicode.replace(/စွှေ/g, 'apT');
+                unicode = unicode.replace(/ဆွှေ/g, 'aqT');
+                unicode = unicode.replace(/ဇွှေ/g, 'aZT');
+                unicode = unicode.replace(/ဈွှေ/g, 'aQT');
+                unicode = unicode.replace(/ညွှေ/g, 'anT');
+                unicode = unicode.replace(/ဋွှေ/g, 'a#T');
+                unicode = unicode.replace(/ဌွှေ/g, 'aXT');
+                unicode = unicode.replace(/ဍွှေ/g, 'a!T');
+                unicode = unicode.replace(/ဎွှေ/g, 'a!T');
+                unicode = unicode.replace(/ဏွှေ/g, 'aPT');
+                unicode = unicode.replace(/တွှေ/g, 'awT');
+                unicode = unicode.replace(/ထွှေ/g, 'axT');
+                unicode = unicode.replace(/ဒွှေ/g, 'a\'T');
+                unicode = unicode.replace(/ဓွှေ/g, 'a"T');
+                unicode = unicode.replace(/နွှေ/g, 'aeT');
+                unicode = unicode.replace(/ပွှေ/g, 'ayT');
+                unicode = unicode.replace(/ဖွှေ/g, 'azT');
+                unicode = unicode.replace(/ဗွှေ/g, 'aAT');
+                unicode = unicode.replace(/ဘွှေ/g, 'abT');
+                unicode = unicode.replace(/မွှေ/g, 'arT');
+                unicode = unicode.replace(/ယွှေ/g, 'a,T');
+                unicode = unicode.replace(/ရွှေ/g, 'a&T');
+                unicode = unicode.replace(/လွှေ/g, 'avT');
+                unicode = unicode.replace(/ဝွှေ/g, 'a0T');
+                unicode = unicode.replace(/သွှေ/g, 'aoT');
+                unicode = unicode.replace(/ဟွှေ/g, 'a[T');
+                unicode = unicode.replace(/ဠွှေ/g, 'aVT');
+                unicode = unicode.replace(/အွှေ/g, 'atT');
+                
+                // Add specific replacements for E vowel + consonant + ya yit combinations
+                unicode = unicode.replace(/ကျေ/g, 'aus');
+                unicode = unicode.replace(/ချေ/g, 'acs');
+                unicode = unicode.replace(/ဂျေ/g, 'a*s');
+                unicode = unicode.replace(/ဃျေ/g, 'aCs');
+                unicode = unicode.replace(/ငျေ/g, 'ais');
+                unicode = unicode.replace(/စျေ/g, 'aps');
+                unicode = unicode.replace(/ဆျေ/g, 'aqs');
+                unicode = unicode.replace(/ဇျေ/g, 'aZs');
+                unicode = unicode.replace(/ဈျေ/g, 'aQs');
+                unicode = unicode.replace(/ညျေ/g, 'ans');
+                unicode = unicode.replace(/ဋျေ/g, 'a#s');
+                unicode = unicode.replace(/ဌျေ/g, 'aXs');
+                unicode = unicode.replace(/ဍျေ/g, 'a!s');
+                unicode = unicode.replace(/ဎျေ/g, 'a!s');
+                unicode = unicode.replace(/ဏျေ/g, 'aPs');
+                unicode = unicode.replace(/တျေ/g, 'aws');
+                unicode = unicode.replace(/ထျေ/g, 'axs');
+                unicode = unicode.replace(/ဒျေ/g, 'a\'s');
+                unicode = unicode.replace(/ဓျေ/g, 'a"s');
+                unicode = unicode.replace(/နျေ/g, 'aes');
+                unicode = unicode.replace(/ပျေ/g, 'ays');
+                unicode = unicode.replace(/ဖျေ/g, 'azs');
+                unicode = unicode.replace(/ဗျေ/g, 'aAs');
+                unicode = unicode.replace(/ဘျေ/g, 'abs');
+                unicode = unicode.replace(/မျေ/g, 'ars');
+                unicode = unicode.replace(/ယျေ/g, 'a,s');
+                unicode = unicode.replace(/ရျေ/g, 'a&s');
+                unicode = unicode.replace(/လျေ/g, 'avs');
+                unicode = unicode.replace(/ဝျေ/g, 'a0s');
+                unicode = unicode.replace(/သျေ/g, 'aos');
+                unicode = unicode.replace(/ဟျေ/g, 'a[s');
+                unicode = unicode.replace(/ဠျေ/g, 'aVs');
+                unicode = unicode.replace(/အျေ/g, 'ats');
+                
+                // Add specific replacements for E vowel + consonant + ya yit + sha htoe combinations
+                unicode = unicode.replace(/ကျှေ/g, 'auQ');
+                unicode = unicode.replace(/ချှေ/g, 'acQ');
+                unicode = unicode.replace(/ဂျှေ/g, 'a*Q');
+                unicode = unicode.replace(/ဃျှေ/g, 'aCQ');
+                unicode = unicode.replace(/ငျှေ/g, 'aiQ');
+                unicode = unicode.replace(/စျှေ/g, 'apQ');
+                unicode = unicode.replace(/ဆျှေ/g, 'aqQ');
+                unicode = unicode.replace(/ဇျှေ/g, 'aZQ');
+                unicode = unicode.replace(/ဈျှေ/g, 'aQQ');
+                unicode = unicode.replace(/ညျှေ/g, 'anQ');
+                unicode = unicode.replace(/ဋျှေ/g, 'a#Q');
+                unicode = unicode.replace(/ဌျှေ/g, 'aXQ');
+                unicode = unicode.replace(/ဍျှေ/g, 'a!Q');
+                unicode = unicode.replace(/ဎျှေ/g, 'a!Q');
+                unicode = unicode.replace(/ဏျှေ/g, 'aPQ');
+                unicode = unicode.replace(/တျှေ/g, 'awQ');
+                unicode = unicode.replace(/ထျှေ/g, 'axQ');
+                unicode = unicode.replace(/ဒျှေ/g, 'a\'Q');
+                unicode = unicode.replace(/ဓျှေ/g, 'a"Q');
+                unicode = unicode.replace(/နျှေ/g, 'aeQ');
+                unicode = unicode.replace(/ပျှေ/g, 'ayQ');
+                unicode = unicode.replace(/ဖျှေ/g, 'azQ');
+                unicode = unicode.replace(/ဗျှေ/g, 'aAQ');
+                unicode = unicode.replace(/ဘျှေ/g, 'abQ');
+                unicode = unicode.replace(/မျှေ/g, 'arQ');
+                unicode = unicode.replace(/ယျှေ/g, 'a,Q');
+                unicode = unicode.replace(/ရျှေ/g, 'a&Q');
+                unicode = unicode.replace(/လျှေ/g, 'avQ');
+                unicode = unicode.replace(/ဝျှေ/g, 'a0Q');
+                unicode = unicode.replace(/သျှေ/g, 'aoQ');
+                unicode = unicode.replace(/ဟျှေ/g, 'a[Q');
+                unicode = unicode.replace(/ဠျှေ/g, 'aVQ');
+                unicode = unicode.replace(/အျှေ/g, 'atQ');
+                
+                // Add specific replacements for E vowel + consonant + ya yit + wa hswe combinations
+                unicode = unicode.replace(/ကျွေ/g, 'ausR');
+                unicode = unicode.replace(/ချွေ/g, 'acsR');
+                unicode = unicode.replace(/ဂျွေ/g, 'a*sR');
+                unicode = unicode.replace(/ဃျွေ/g, 'aCsR');
+                unicode = unicode.replace(/ငျွေ/g, 'aisR');
+                unicode = unicode.replace(/စျွေ/g, 'apsR');
+                unicode = unicode.replace(/ဆျွေ/g, 'aqsR');
+                unicode = unicode.replace(/ဇျွေ/g, 'aZsR');
+                unicode = unicode.replace(/ဈျွေ/g, 'aQsR');
+                unicode = unicode.replace(/ညျွေ/g, 'anR');
+                unicode = unicode.replace(/ဋျွေ/g, 'a#sR');
+                unicode = unicode.replace(/ဌျွေ/g, 'aXsR');
+                unicode = unicode.replace(/ဍျွေ/g, 'a!sR');
+                unicode = unicode.replace(/ဎျွေ/g, 'a!sR');
+                unicode = unicode.replace(/ဏျွေ/g, 'aPsR');
+                unicode = unicode.replace(/တျွေ/g, 'awsR');
+                unicode = unicode.replace(/ထျွေ/g, 'axsR');
+                unicode = unicode.replace(/ဒျွေ/g, 'a\'sR');
+                unicode = unicode.replace(/ဓျွေ/g, 'a"sR');
+                unicode = unicode.replace(/နျွေ/g, 'aesR');
+                unicode = unicode.replace(/ပျွေ/g, 'aysR');
+                unicode = unicode.replace(/ဖျွေ/g, 'azsR');
+                unicode = unicode.replace(/ဗျွေ/g, 'aAsR');
+                unicode = unicode.replace(/ဘျွေ/g, 'absR');
+                unicode = unicode.replace(/မျွေ/g, 'arsR');
+                unicode = unicode.replace(/ယျွေ/g, 'a,sR');
+                unicode = unicode.replace(/ရျွေ/g, 'a&sR');
+                unicode = unicode.replace(/လျွေ/g, 'avsR');
+                unicode = unicode.replace(/ဝျွေ/g, 'a0sR');
+                unicode = unicode.replace(/သျွေ/g, 'aosR');
+                unicode = unicode.replace(/ဟျွေ/g, 'a[sR');
+                unicode = unicode.replace(/ဠျွေ/g, 'aVsR');
+                unicode = unicode.replace(/အျွေ/g, 'atsR');
+                
+                // Add specific replacements for E vowel + consonant + ya yit + wa hswe + sha htoe combinations
+                unicode = unicode.replace(/ကျွှေ/g, 'ausW');
+                unicode = unicode.replace(/ချွှေ/g, 'acsW');
+                unicode = unicode.replace(/ဂျွှေ/g, 'a*sW');
+                unicode = unicode.replace(/ဃျွှေ/g, 'aCsW');
+                unicode = unicode.replace(/ငျွှေ/g, 'aisW');
+                unicode = unicode.replace(/စျွှေ/g, 'apsW');
+                unicode = unicode.replace(/ဆျွှေ/g, 'aqsW');
+                unicode = unicode.replace(/ဇျွှေ/g, 'aZsW');
+                unicode = unicode.replace(/ဈျွှေ/g, 'aQsW');
+                unicode = unicode.replace(/ညျွှေ/g, 'ansW');
+                unicode = unicode.replace(/ဋျွှေ/g, 'a#sW');
+                unicode = unicode.replace(/ဌျွှေ/g, 'aXsW');
+                unicode = unicode.replace(/ဍျွှေ/g, 'a!sW');
+                unicode = unicode.replace(/ဎျွှေ/g, 'a!sW');
+                unicode = unicode.replace(/ဏျွှေ/g, 'aPsW');
+                unicode = unicode.replace(/တျွှေ/g, 'awsW');
+                unicode = unicode.replace(/ထျွှေ/g, 'axsW');
+                unicode = unicode.replace(/ဒျွှေ/g, 'a\'sW');
+                unicode = unicode.replace(/ဓျွှေ/g, 'a"sW');
+                unicode = unicode.replace(/နျွှေ/g, 'aesW');
+                unicode = unicode.replace(/ပျွှေ/g, 'aysW');
+                unicode = unicode.replace(/ဖျွှေ/g, 'azsW');
+                unicode = unicode.replace(/ဗျွှေ/g, 'aAsW');
+                unicode = unicode.replace(/ဘျွှေ/g, 'absW');
+                unicode = unicode.replace(/မျွှေ/g, 'arsW');
+                unicode = unicode.replace(/ယျွှေ/g, 'a,sW');
+                unicode = unicode.replace(/ရျွှေ/g, 'a&sW');
+                unicode = unicode.replace(/လျွှေ/g, 'avsW');
+                unicode = unicode.replace(/ဝျွှေ/g, 'a0sW');
+                unicode = unicode.replace(/သျွှေ/g, 'aosW');
+                unicode = unicode.replace(/ဟျွှေ/g, 'a[sW');
+                unicode = unicode.replace(/ဠျွှေ/g, 'aVsW');
+                unicode = unicode.replace(/အျွှေ/g, 'atsW');
+                
+                unicode = unicode.replace(/‌ခေါ်/g, 'ac:');
+                unicode = unicode.replace(/‌ဂေါ်/g, 'a*:');
+                unicode = unicode.replace(/‌ဒေါ်/g, 'aK:');
+                unicode = unicode.replace(/‌ပေါ်/g, 'ay:');
+                unicode = unicode.replace(/‌ဝေါ်/g, 'aE:');
+                
+                while (i < unicode.length) {
+                    let matched = false;
+                    
+                    // Handle "ေ" vowel which comes before consonant in Win Innwa
+                    if (i + 1 < unicode.length && unicode[i] === 'ေ') {
+                        const nextChar = unicode[i+1];
+                        if (unicodeToWinChar[nextChar]) {
+                            // Check if wa hswe follows the consonant
+                            if (i + 2 < unicode.length && unicode[i+2] === 'ွ') {
+                                // Check if sha htoe follows wa hswe
+                                if (i + 3 < unicode.length && unicode[i+3] === 'ှ') {
+                                    result += 'a' + unicodeToWinChar[nextChar] + 'T';
+                                    i += 4;
+                                } else {
+                                    result += 'a' + unicodeToWinChar[nextChar] + 'G';
+                                    i += 3;
+                                }
+                            } else {
+                            result += 'a' + unicodeToWinChar[nextChar];
+                            i += 2;
+                            matched = true;
+                            continue;
+                            }
+                        }
+                    }
+                    
+                    // We've handled most Ra Medial combinations with direct replacements above
+                    // This fallback catches any uncommon cases
+                    if (i > 0 && unicode[i] === 'ြ') {
+                        const prevChar = unicode[i-1];
+                        const bigRaConsonants = ['က', 'ဃ', 'ဆ', 'ဏ', 'တ', 'ထ', 'ဘ', 'ယ', 'လ', 'အ'];
+                        
+                        if (unicodeToWinChar[prevChar]) {
+                            // Check if there's an attachment after Ra Medial
+                            let hasAttachment = false;
+                            let attachments = '';
+                            let j = i + 1;
+                            
+                            // Collect all attachments (vowels, signs) that follow
+                            while (j < unicode.length && /[ိီုူဲံ့်း္ွှ]/.test(unicode[j])) {
+                                hasAttachment = true;
+                                if (unicodeToWinChar[unicode[j]]) {
+                                    attachments += unicodeToWinChar[unicode[j]];
+                                }
+                                j++;
+                            }
+                            
+                            // Apply the appropriate Ra variant followed by any attachments
+                            if (bigRaConsonants.includes(prevChar)) {
+                                // For big variant consonants, use 'M' before the consonant
+                                result = result.slice(0, -1) + 'M' + unicodeToWinChar[prevChar] + attachments;
+                            } else {
+                                // For small variant consonants, use 'j' before the consonant
+                                result = result.slice(0, -1) + 'j' + unicodeToWinChar[prevChar] + attachments;
+                            }
+                            i = j; // Skip ahead past all attachments
+                            matched = true;
+                            continue;
+                        }
+                    }
+                    
+                    // Handle the specific combination of wa hswe (ွ) followed by sha htoe (ှ)
+                    if (i + 1 < unicode.length && unicode[i] === 'ွ' && unicode[i+1] === 'ှ') {
+                        result += 'T'; // Map the combination to 'T'
+                        i += 2; // Skip both characters
+                        matched = true;
+                        continue;
+                    }
+                    
+                    // Handle the specific combination of ya yit (ျ) followed by sha htoe (ှ)
+                    if (i + 1 < unicode.length && unicode[i] === 'ျ' && unicode[i+1] === 'ှ') {
+                        result += 'Q'; // Map the combination to 'Q'
+                        i += 2; // Skip both characters
+                        matched = true;
+                        continue;
+                    }
+                    
+                    // Handle the specific combination of ya yit (ျ) followed by wa hswe (ွ)
+                    if (i + 1 < unicode.length && unicode[i] === 'ျ' && unicode[i+1] === 'ွ') {
+                        // Check if sha htoe follows wa hswe (ျ + ွ + ှ)
+                        if (i + 2 < unicode.length && unicode[i+2] === 'ှ') {
+                            result += 'W'; // Map the combination to 'W'
+                            i += 3; // Skip all three characters
+                        } else {
+                            result += 'R'; // Map the combination to 'R'
+                            i += 2; // Skip both characters
+                        }
+                        matched = true;
+                        continue;
+                    }
+                    
+                    // Handle the specific combination of sha htoe (ှ) followed by u vowel (ု)
+                    if (i + 1 < unicode.length && unicode[i] === 'ှ' && unicode[i+1] === 'ု') {
+                        result += 'I'; // Map the combination to 'I'
+                        i += 2; // Skip both characters
+                        matched = true;
+                        continue;
+                    }
+                    
+                    // Handle the specific combination of Ra Medial (ြ) followed by wa hswe (ွ)
+                    if (i > 0 && i + 1 < unicode.length && unicode[i] === 'ြ' && unicode[i+1] === 'ွ') {
+                        const prevChar = unicode[i-1];
+                        const bigRaConsonants = ['က', 'ဃ', 'ဆ', 'ဏ', 'တ', 'ထ', 'ဘ', 'ယ', 'လ', 'အ'];
+                        
+                        if (unicodeToWinChar[prevChar]) {
+                            // Check if there are more attachments after wa hswe
+                            let attachments = '';
+                            let j = i + 2;
+                            
+                            // Collect all attachments (vowels, signs) that follow
+                            while (j < unicode.length && /[ိီုူဲံ့်း္ှ]/.test(unicode[j])) {
+                                if (unicodeToWinChar[unicode[j]]) {
+                                    attachments += unicodeToWinChar[unicode[j]];
+                                }
+                                j++;
+                            }
+                            
+                            // Apply the appropriate Ra + wa hswe variant followed by any attachments
+                            if (bigRaConsonants.includes(prevChar)) {
+                                // For big variant consonants (M/B), use '<' for the Ra + wa hswe combination
+                                result = result.slice(0, -1) + '<' + unicodeToWinChar[prevChar] + attachments;
+                            } else {
+                                // For small variant consonants (j/N), use '>' for the Ra + wa hswe combination
+                                result = result.slice(0, -1) + '>' + unicodeToWinChar[prevChar] + attachments;
+                            }
+                            i = j; // Skip ahead past all attachments
+                            matched = true;
+                            continue;
+                        }
+                    }
+                    
+                    if (!matched) {
+                        // Standard character conversion
+                        const char = unicode[i];
+                        result += unicodeToWinChar[char] || char;
+                        i++;
+                    }
+                }
+                
+                return result;
+            } catch (e) {
+                console.error(e);
+                return unicode; // Return original on error
+            }
+        }
+
+        unicodeBox.oninput = function() {
+            try {
+                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
+                const unicodeText = unicodeBox.value;
+                
+                // Try two approaches for conversion
+                
+                // Approach 1: First convert Unicode to Zawgyi using Rabbit, then Zawgyi to Win
+                const zawgyiText = Rabbit.uni2zg(unicodeText);
+                zawgyiBox.value = zawgyiText;
+                // const winText1 = zawgyiToWinText(zawgyiText);
+                
+                // Approach 2: Direct Unicode to Win Innwa conversion
+                const winText2 = unicodeToWinText(unicodeText);
+                
+                // Use direct conversion as it's usually more reliable for pasted Unicode text
+                winBox.value = winText2;
+                
+                // Log for debugging purposes
+                console.log('Unicode:', unicodeText);
+                console.log('Converted to Zawgyi:', zawgyiText);
+                // console.log('Via Zawgyi to Win:', winText1);
+                console.log('Direct Unicode to Win:', winText2);
+            } catch (e) {
+                console.error(e);
+                error({ name: 'ConversionError', message: e.message });
+            }
+        };
+
+        zawgyiBox.oninput = function() {
+            try {
+                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
+                const zawgyiText = zawgyiBox.value;
+                const unicodeText = Rabbit.zg2uni(zawgyiText);
+                unicodeBox.value = unicodeText;
+                winBox.value = zawgyiToWinText(zawgyiText);
+            } catch (e) {
+                error({ name: 'ConversionError', message: e.message });
+            }
+        };
+
+        winBox.oninput = function() {
+            try {
+                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
+                const winText = winBox.value;
+                const zawgyiText = winToZawgyiText(winText);
+                zawgyiBox.value = zawgyiText;
+                unicodeBox.value = Rabbit.zg2uni(zawgyiText);
+            } catch (e) {
+                error({ name: 'ConversionError', message: e.message });
+            }
+        };
+
+        function clearAll() {
+            unicodeBox.value = '';
+            zawgyiBox.value = '';
+            winBox.value = '';
+            errorDiv.style.display = 'none';
+        }
+
+        function copyText(type) {
+            const text = document.getElementById(type).value;
+            if (text) {
+                navigator.clipboard.writeText(text)
+                    .then(() => alert(`${type.charAt(0).toUpperCase() + type.slice(1)} copied to clipboard!`))
+                    .catch(() => error({ name: 'ClipboardError', message: 'Failed to copy text' }));
+            } else {
+                alert(`No ${type} text to copy!`);
+            }
+        }
+
+        window.onload = function() {
+            if (typeof Rabbit === 'undefined') {
+                error({ name: 'LibraryError', message: 'Rabbit library failed to load. Check your internet connection.' });
+            }
+            
+            // Use only local font - remove all CDN references
+            const winStyle = document.createElement('style');
+            winStyle.textContent = `
+                @font-face {
+                    font-family: 'Win Innwa';
+                    src: url('./fonts/Win_Innwa.ttf') format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
+                    font-display: block;
+                }
+            `;
+            document.head.appendChild(winStyle);
+            
+            // Create preloaders for fonts
+            const preloadZawgyi = document.createElement('div');
+            preloadZawgyi.style.fontFamily = 'Zawgyi-One';
+            preloadZawgyi.style.visibility = 'hidden';
+            preloadZawgyi.textContent = 'သီဟိုဠ္မွ ဉာဏ္ႀကီးရွင္သည္ အာယုဝဍ္ဎနေဆးၫႊန္းစာကို ဇလြန္ေဈးေဘး ဗာဒံပင္ထက္ အဓိ႒ာန္လ်က္ ဂဃနဏဖတ္ခဲ့သည္။';
+            document.body.appendChild(preloadZawgyi);
+            
+            const preloadWin = document.createElement('div');
+            preloadWin.style.fontFamily = 'Win Innwa';
+            preloadWin.style.visibility = 'hidden';
+            preloadWin.textContent = 'od[dkVfrS ÓPfBuD;&Sifonf tm,k0¡eaq;nTef;pmudk ZvGefaps;ab; Am\'Hyifxuf t&quot;d|mefvsuf *Ce zwfcJhonf/';
+            document.body.appendChild(preloadWin);
+            
+            // Set the pangram in the boxes on load
+            unicodeBox.value = "သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။";
+            zawgyiBox.value = Rabbit.uni2zg(unicodeBox.value);
+            winBox.value = zawgyiToWinText(zawgyiBox.value);
+            
+            // Forcefully apply Win Innwa font to the textarea
+            document.getElementById('win').style.cssText = `
+                font-family: 'Win Innwa' !important;
+                font-size: 16px;
+                line-height: 1.5;
+            `;
+        };
+    </script>
+</body>
+</html> 

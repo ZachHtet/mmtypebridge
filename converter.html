@@ -1,458 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <title>MM Type Bridge</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        textarea { width: 300px; height: 100px; margin: 10px; }
-        button { margin: 5px; }
-        #error { color: red; display: none; }
-        
-        #zawgyi { 
-            font-family: 'Zawgyi-One', sans-serif !important; 
-            font-size: 16px; 
-            line-height: 1.5; 
-            direction: ltr; 
-            unicode-bidi: embed;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
-        }
-        
-        #win {
-            font-family: 'Win Innwa', 'WinInnwa', 'Win', sans-serif !important;
-            font-size: 16px;
-            line-height: 1.5;
-        }
-    </style>
-    <!-- Use local font files from your GitHub repository for Zawgyi -->
-    <style>
-        @font-face {
-            font-family: 'Zawgyi-One';
-            src: url('./fonts/Zawgyi-One.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Win Innwa';
-            src: url('./fonts/W49.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-            font-display: swap;
-        }
-    </style>
-    <!-- Add a direct link to a known working Win Innwa font -->
-    <link href="https://fonts.cdnfonts.com/css/win-innwa" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/rabbit-node@1.0.2/lib/rabbit.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MM Type Bridge - Burmese Font Converter</title>
+    <meta name="description" content="Convert between Myanmar Unicode, Zawgyi, and Win Innwa fonts seamlessly">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="rabbit.js"></script>
 </head>
 <body>
-    <h1>Burmese Font Converter</h1>
-    <div>
-        <label>Unicode</label><br>
-        <textarea id="unicode" placeholder="Enter Unicode text"></textarea>
-    </div>
-    <div>
-        <label>Zawgyi (using Zawgyi-One font)</label><br>
-        <textarea id="zawgyi" placeholder="Enter Zawgyi text"></textarea>
-    </div>
-    <div>
-        <label>Win Innwa (English characters)</label><br>
-        <textarea id="win" placeholder="Enter Win Innwa text (English characters)"></textarea>
-    </div>
-    <div id="error"></div>
-    <div>
-        <button onclick="clearAll()">Clear</button>
-        <button onclick="copyText('unicode')">Copy Unicode</button>
-        <button onclick="copyText('zawgyi')">Copy Zawgyi</button>
-        <button onclick="copyText('win')">Copy Win</button>
+    <!-- Confetti container for copy success animation -->
+    <div class="confetti-container" id="confetti"></div>
+    
+    <!-- Success toast -->
+    <div class="toast" id="toast">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 6L9 17l-5-5"></path>
+        </svg>
+        <span id="toast-message">Copied to clipboard!</span>
     </div>
 
-    <script>
-        // Character mapping from Zawgyi to Win Innwa
-        const zawgyiToWinChar = {
-            // Basic consonants
-            'က': 'u', 'ခ': 'c', 'ဂ': '*', 'ဃ': 'C', 'င': 'i', 'စ': 'p', 'ဆ': 'q', 'ဇ': 'Z', 'ဈ': 'Q', 'ဉ': 'O',
-            'ည': 'n', 'ဋ': '#', 'ဌ': 'X', 'ဍ': '!', 'ဎ': '!', 'ဏ': 'P', 'တ': 'w', 'ထ': 'x', 'ဒ': '\'', 'ဓ': '"',
-            'န': 'e', 'ပ': 'y', 'ဖ': 'z', 'ဗ': 'A', 'ဘ': 'b', 'မ': 'r', 'ယ': ',', 'ရ': '&', 'လ': 'v', 'ဝ': '0',
-            'သ': 'o', 'ဟ': '[', 'ဠ': 'V', 'အ': 't', 'ဥ':'O',
-            // Vowels and signs
-            'ါ': 'g', 'ာ': 'm', 'ိ': 'd', 'ီ': 'D', 'ု': 'k', 'ူ': 'l', 'ေ': 'a', 'ဲ': 'J', 
-            'ံ': 'H', '့': 'h', 'း': ';', '္': 'f', 'ျ': 'j', 'ြ': 'G', 'ွ': 'S', 'ှ': 'T',
-            // Numbers
-            '၀': '0', '၁': '1', '၂': '2', '၃': '3', '၄': '4', '၅': '5', '၆': '6', '၇': '7', '၈': '8', '၉': '9',
-            // Punctuation
-            '၊': '/', '။': '?', ' ': ' ', '?': '?', '.': '.', ',': ',', '"': '"', '"': '"', '\n': '\n'
-        };
+    <div class="container">
+        <header class="header">
+            <a href="#" class="logo">MM Type Bridge</a>
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"></path>
+                </svg>
+                <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="display: none;">
+                    <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0-5a1 1 0 0 0 1-1v-1a1 1 0 0 0-2 0v1a1 1 0 0 0 1 1zm0 20a1 1 0 0 0-1 1v1a1 1 0 0 0 2 0v-1a1 1 0 0 0-1-1zm13-11h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zm-24 0h-1a1 1 0 0 0 0 2h1a1 1 0 0 0 0-2zm18.071-7.071a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 0 0 1.414 1.414l1.414-1.414a1 1 0 0 0 0-1.414zM7.757 17.657a1 1 0 0 0-1.414 0l-1.414 1.414a1 1 0 1 0 1.414 1.414l1.414-1.414a1 1 0 0 0 0-1.414zM4.929 4.929a1 1 0 0 0-1.414 1.414l1.414 1.414a1 1 0 0 0 1.414-1.414zm14.142 14.142a1 1 0 0 0 1.414-1.414l-1.414-1.414a1 1 0 0 0-1.414 1.414z"></path>
+                </svg>
+            </button>
+        </header>
 
-        // Special character combinations for Win Innwa
-        const specialCombinations = {
-            'ကြ': 'uF', 'ခြ': 'cF', 'ဂြ': '*F', 'ဃြ': 'CF', 'ငြ': 'iF',
-            'စြ': 'pF', 'ဆြ': 'qF', 'ဇြ': 'ZF', 'ဈြ': 'QF', 'ဉြ': 'OF',
-            'ညြ': 'nF', 'ဋြ': '#F', 'ဌြ': 'XF', 'ဍြ': '!F', 'ဎြ': '!F',
-            'ဏြ': 'PF', 'တြ': 'wF', 'ထြ': 'xF', 'ဒြ': '\'F', 'ဓြ': '"F',
-            'နြ': 'eF', 'ပြ': 'yF', 'ဖြ': 'zF', 'ဗြ': 'AF', 'ဘြ': 'bF',
-            'မြ': 'rF', 'ယြ': ',F', 'ရြ': '&F', 'လြ': 'vF', 'ဝြ': '0F',
-            'သြ': 'oF', 'ဟြ': '[F', 'ဠြ': 'VF', 'အြ': 'tF', 'ဥြ': 'OF',
-            'ကြွ': 'uGS', 'ခြွ': 'cGS', 'ဂြွ': '*GS', 'ငြွ': 'iGS',
-            'စြွ': 'pGS', 'ဆြွ': 'qGS', 'ဇြွ': 'ZGS', 'ညြွ': 'nGS',
-            'တြွ': 'wGS', 'ထြွ': 'xGS', 'ဒြွ': '\'GS', 'နြွ': 'eGS',
-            'ပြွ': 'yGS', 'ဖြွေ': 'zGS', 'ဗြွေ': 'AGS', 'ဘြွေ': 'bGS',
-            'မြွေ': 'rGS', 'ယြွေ': ',GS', 'ရြွေ': '&GS', 'လြွေ': 'vGS',
-            'သြွေ': 'oGS', 'ဟြွေ': '[GS', 'အြွေ': 'tGS',
-            'ကြော': 'auFm', 'ခြော': 'acFm', 'ဂြော': 'a*Fm', 'ငြော': 'aiFm',
-            'စြော': 'apFm', 'ဆြော': 'aqFm', 'ဇြော': 'aZFm', 'ညြော': 'anFm',
-            'တြော': 'awFm', 'ထြော': 'axFm', 'ဒြော': 'a\'Fm', 'နြော': 'aeFm',
-            'ပြော': 'ayFm', 'ဖြော': 'azFm', 'ဗြော': 'aAFm', 'ဘြော': 'abFm',
-            'မြော': 'arFm', 'ယြော': 'a,Fm', 'ရြော': 'a&Fm', 'လြောင်': 'avFmif',
-            'သြော': 'aoFm', 'ဟြော': 'a[Fmif', 'အြော': 'atFmif',
-            'ကြို': 'uFdk', 'ခြို': 'cFdk', 'ဂြို': '*Fdk', 'ငြို': 'iFdk',
-            'စြို': 'pFdk', 'ဆြို': 'qFdk', 'ဇြို': 'ZFdk', 'ညြို': 'nFdk',
-            'တြို': 'wFdk', 'ထြို': 'xFdk', 'ဒြို': '\'Fdk', 'နြို': 'eFdk',
-            'ပြို': 'yFdk', 'ဖြို': 'zFdk', 'ဗြို': 'AFdk', 'ဘြို': 'bFdk',
-            'မြို': 'rFdk', 'ယြို': ',Fdk', 'ရြို': '&Fdk', 'လြို': 'vFdk',
-            'သြို': 'oFdk', 'ဟြို': '[Fdk', 'အြို': 'tFdk',
-            'ကြီ': 'uFD', 'ခြီ': 'cFD', 'ဂြီ': '*FD', 'ငြီ': 'iFD',
-            'စြီ': 'pFD', 'ဆြီ': 'qFD', 'ဇြီ': 'ZFD', 'ညြီ': 'nFD',
-            'တြီ': 'wFD', 'ထြီ': 'xFD', 'ဒြီ': '\'FD', 'နြီ': 'eFD',
-            'ပြီ': 'yFD', 'ဖြီ': 'zFD', 'ဗြီ': 'AFD', 'ဘြီ': 'bFD',
-            'မြီ': 'rFD', 'ယြီ': ',FD', 'ရြီ': '&FD', 'လြီ': 'vFD',
-            'သြီ': 'oFD', 'ဟြီ': '[FD', 'အြီ': 'tFD',
-            'ကြံ': 'uFH', 'ခြံ': 'cFH', 'ဂြံ': '*FH', 'ငြံ': 'iFH',
-            'စြံ': 'pFH', 'ဆြံ': 'qFH', 'ဇြံ': 'ZFH', 'ညြံ': 'nFH',
-            'တြံ': 'wFH', 'ထြံ': 'xFH', 'ဒြံ': '\'FH', 'နြံ': 'eFH',
-            'ပြံ': 'yFH', 'ဖြံ': 'zFH', 'ဗြံ': 'AFH', 'ဘြံ': 'bFH',
-            'မြံ': 'rFH', 'ယြံ': ',FH', 'ရြံ': '&FH', 'လြံ': 'vFH',
-            'သြံ': 'oFH', 'ဟြံ': '[FH', 'အြံ': 'tFH',
-            'ကြိ': 'uFd', 'ခြိ': 'cFd', 'ဂြိ': '*Fd', 'ငြိ': 'iFd',
-            'စြိ': 'pFd', 'ဆြိ': 'qFd', 'ဇြိ': 'ZFd', 'ညြိ': 'nFd',
-            'တြိ': 'wFd', 'ထြိ': 'xFd', 'ဒြိ': '\'Fd', 'နြိ': 'eFd',
-            'ပြိ': 'yFd', 'ဖြိ': 'zFd', 'ဗြိ': 'AFd', 'ဘြိ': 'bFd',
-            'မြိ': 'rFd', 'ယြိ': ',Fd', 'ရြိ': '&Fd', 'လြိ': 'vFd',
-            'သြိ': 'oFd', 'ဟြိ': '[Fd', 'အြိ': 'tFd',
-            'ကြဲ': 'uFJ', 'ခြဲ': 'cFJ', 'ဂြဲ': '*FJ', 'ငြဲ': 'iFJ',
-            'စြဲ': 'pFJ', 'ဆြဲ': 'qFJ', 'ဇြဲ': 'ZFJ', 'ညြဲ': 'nFJ',
-            'တြဲ': 'wFJ', 'ထြဲ': 'xFJ', 'ဒြဲ': '\'FJ', 'နြဲ': 'eFJ',
-            'ပြဲ': 'yFJ', 'ဖြဲ': 'zFJ', 'ဗြဲ': 'AFJ', 'ဘြဲ': 'bFJ',
-            'မြဲ': 'rFJ', 'ယြဲ': ',FJ', 'ရြဲ': '&FJ', 'လြဲ': 'vFJ',
-            'သြဲ': 'oFJ', 'ဟြဲ': '[FJ', 'အြဲ': 'tFJ',
-            'ကြောင်': 'auFmif', 'ခြောင်': 'acFmif', 'ဂြောင်': 'a*Fmif', 'ငြောင်': 'aiFmif',
-            'စြောင်': 'apFmif', 'ဆြောင်': 'aqFmif', 'ဇြောင်': 'aZFmif', 'ညြောင်': 'anFmif',
-            'တြောင်': 'awFmif', 'ထြောင်': 'axFmif', 'ဒြောင်': 'a\'Fmif', 'နြောင်': 'aeFmif',
-            'ပြောင်': 'ayFmif', 'ဖြောင်': 'azFmif', 'ဗြောင်': 'aAFmif', 'ဘြောင်': 'abFmif',
-            'မြောင်': 'arFmif', 'ယြောင်': 'a,Fmif', 'ရြောင်': 'a&Fmif', 'လြောင်': 'avFmif',
-            'သြောင်': 'aoFmif', 'ဟြောင်': 'a[Fmif', 'အြောင်': 'atFmif',
-            'ကြု': 'uFk', 'ခြု': 'cFk', 'ဂြု': '*Fk', 'ငြု': 'iFk',
-            'စြု': 'pFk', 'ဆြု': 'qFk', 'ဇြု': 'ZFk', 'ညြု': 'nFk',
-            'တြု': 'wFk', 'ထြု': 'xFk', 'ဒြု': '\'Fk', 'နြု': 'eFk',
-            'ပြု': 'yFk', 'ဖြု': 'zFk', 'ဗြု': 'AFk', 'ဘြု': 'bFk',
-            'မြု': 'rFk', 'ယြု': ',Fk', 'ရြု': '&Fk', 'လြု': 'vFk',
-            'သြု': 'oFk', 'ဟြု': '[Fk', 'အြု': 'tFk',
-            'ကြူ': 'uFl', 'ခြူ': 'cFl', 'ဂြူ': '*Fl', 'ငြူ': 'iFl',
-            'စြူ': 'pFl', 'ဆြူ': 'qFl', 'ဇြူ': 'ZFl', 'ညြူ': 'nFl',
-            'တြူ': 'wFl', 'ထြူ': 'xFl', 'ဒြူ': '\'Fl', 'နြူ': 'eFl',
-            'ပြူ': 'yFl', 'ဖြူ': 'zFl', 'ဗြူ': 'AFl', 'ဘြူ': 'bFl',
-            'မြူ': 'rFl', 'ယြူ': ',Fl', 'ရြူ': '&Fl', 'လြူ': 'vFl',
-            'သြူ': 'oFl', 'ဟြူ': '[Fl', 'အြူ': 'tFl',
-            'ကြ့': 'uFh', 'ခြ့': 'cFh', 'ဂြ့': '*Fh', 'ငြ့': 'iFh',
-            'စြ့': 'pFh', 'ဆြ့': 'qFh', 'ဇြ့': 'ZFh', 'ညြ့': 'nFh',
-            'တြ့': 'wFh', 'ထြ့': 'xFh', 'ဒြ့': '\'Fh', 'နြ့': 'eFh',
-            'ပြ့': 'yFh', 'ဖြ့': 'zFh', 'ဗြ့': 'AFh', 'ဘြ့': 'bFh',
-            'မြ့': 'rFh', 'ယြ့': ',Fh', 'ရြ့': '&Fh', 'လြ့': 'vFh',
-            'သြ့': 'oFh', 'ဟြ့': '[Fh', 'အြ့': 'tFh',
-            'ကြး': 'uF;', 'ခြး': 'cF;', 'ဂြး': '*F;', 'ငြး': 'iF;',
-            'စြး': 'pF;', 'ဆြး': 'qF;', 'ဇြး': 'ZF;', 'ညြး': 'nF;',
-            'တြး': 'wF;', 'ထြး': 'xF;', 'ဒြး': '\'F;', 'နြး': 'eF;',
-            'ပြး': 'yF;', 'ဖြး': 'zF;', 'ဗြး': 'AF;', 'ဘြး': 'bF;',
-            'မြး': 'rF;', 'ယြး': ',F;', 'ရြး': '&F;', 'လြး': 'vF;',
-            'သြး': 'oF;', 'ဟြး': '[F;', 'အြး': 'tF;',
-            'ကြောက်': 'auFmuf', 'ခြောက်': 'acFmuf', 'ဂြောက်': 'a*Fmuf',
-            'စြောက်': 'apFmuf', 'ဆြောက်': 'aqFmuf', 'တြောက်': 'awFmuf',
-            'ပြောက်': 'ayFmuf', 'ဖြောက်': 'azFmuf', 'ဘြောက်': 'abFmuf',
-            'မြောက်': 'arFmuf', 'ရြောက်': 'a&Fmuf', 'လြောက်': 'avFmuf',
-            'သြောက်': 'aoFmuf',
-            'ကြိုက်': 'uFdkuf', 'ခြိုက်': 'cFdkuf', 'ဂြိုက်': '*Fdkuf',
-            'စြိုက်': 'pFdkuf', 'ဆြိုက်': 'qFdkuf', 'တြိုက်': 'wFdkuf',
-            'ပြိုက်': 'yFdkuf', 'ဖြိုက်': 'zFdkuf', 'ဘြိုက်': 'bFdkuf',
-            'မြိုက်': 'rFdkuf', 'ရြိုက်': '&Fdkuf', 'လြိုက်': 'vFdkuf',
-            'သြိုက်': 'oFdkuf',
-            'ကြွေ': 'uGSa', 'ခြွေ': 'cGSa', 'ဂြွေ': '*GSa', 'ငြွေ': 'iGSa',
-            'စြွေ': 'pGSa', 'ဆြွေ': 'qGSa', 'ဇြွေ': 'ZGSa', 'ညြွေ': 'nGSa',
-            'တြွေ': 'wGSa', 'ထြွေ': 'xGSa', 'ဒြွေ': '\'GSa', 'နြွေ': 'eGSa',
-            'ပြွေ': 'yGSa', 'ဖြွေ': 'zGSa', 'ဗြွေ': 'AGSa', 'ဘြွေ': 'bGSa',
-            'မြွေ': 'rGSa', 'ယြွေ': ',GSa', 'ရြွေ': '&GSa', 'လြွေ': 'vGSa',
-            'သြွေ': 'oGSa', 'ဟြွေ': '[GSa', 'အြွေ': 'tGSa',
-            'ကြော့': 'auFmh', 'ခြော့': 'acFmh', 'ဂြော့': 'a*Fmh',
-            'စြော့': 'apFmh', 'ဆြော့': 'aqFmh', 'တြော့': 'awFmh',
-            'ပြော့': 'ayFmh', 'ဖြော့': 'azFmh', 'ဘြော့': 'abFmh',
-            'မြော့': 'arFmh', 'ရြော့': 'a&Fmh', 'လြော့': 'avFmh',
-            'သြော့': 'aoFmh'
-        };
+        <main class="main">
+            <div class="card">
+                <h1 class="title">MM Type Bridge</h1>
+                <p class="subtitle">Seamlessly convert between Myanmar Unicode, Zawgyi, and Win Innwa fonts</p>
 
-        // Common patterns for Zawgyi to Win Innwa conversion
-        const zawgyiToWinPatterns = [
-            // Special combinations first
-            { pattern: /([\u1000-\u1021])([\u103C])([\u1031]?)([\u102D\u102E\u102F\u1030\u1032\u1036\u1037\u1038\u1039\u103A\u103B\u103D\u103E]*)/g,
-              replace: function(match, consonant, ra, e, restVowels) {
-                  // Check if this is a special combination
-                  const combo = consonant + ra + (e || '') + (restVowels || '');
-                  if (specialCombinations[combo]) {
-                      return specialCombinations[combo];
-                  }
-                  
-                  // If not a special combination, handle it with the standard pattern
-                  return (e ? zawgyiToWinChar[e] : '') + 
-                         zawgyiToWinChar[consonant] + 
-                         'F' + // Special handling for ra medial
-                         Array.from(restVowels || '').map(c => zawgyiToWinChar[c] || c).join('');
-              }
-            },
-            
-            // Common syllable patterns with stacked consonants
-            { pattern: /([က-အ])([ျြွှ]*)([ေ]?)([က-အ])([္])/g, 
-              replace: function(match, c1, c2, c3, c4, c5) {
-                  return (c3 ? zawgyiToWinChar[c3] : '') + 
-                         zawgyiToWinChar[c1] + 
-                         Array.from(c2).map(c => {
-                             // Special handling for ra medial
-                             if (c === 'ြ') return 'F';
-                             return zawgyiToWinChar[c] || c;
-                         }).join('') + 
-                         zawgyiToWinChar[c5] + 
-                         zawgyiToWinChar[c4];
-              }
-            },
-            
-            // Vowel 'a' (ေ) comes before consonant in Win Innwa
-            { pattern: /([ေ])([က-အ])/g, 
-              replace: function(match, c1, c2) {
-                  return zawgyiToWinChar[c1] + zawgyiToWinChar[c2];
-              }
-            },
-            
-            // Handle medials and vowels
-            { pattern: /([က-အ])([ျြွှ]+)/g, 
-              replace: function(match, c1, c2) {
-                  return zawgyiToWinChar[c1] + 
-                         Array.from(c2).map(c => {
-                             // Special handling for ra medial
-                             if (c === 'ြ') return 'F';
-                             return zawgyiToWinChar[c] || c;
-                         }).join('');
-              }
-            }
-        ];
+                <div class="converter-grid">
+                    <div class="converter-item">
+                        <label for="unicode" class="converter-label">Unicode (using Pyidaungsu font)</label>
+                        <textarea id="unicode" class="textarea" placeholder="သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။"></textarea>
+                        <div class="button-group">
+                            <button id="copy-unicode" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path>
+                                </svg>
+                                Copy
+                                <span class="tooltiptext">Copy text</span>
+                            </button>
+                            <button id="clear-unicode" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                                </svg>
+                                Clear
+                                <span class="tooltiptext">Clear text</span>
+                            </button>
+                        </div>
+                    </div>
 
-        const unicodeBox = document.getElementById('unicode');
-        const zawgyiBox = document.getElementById('zawgyi');
-        const winBox = document.getElementById('win');
-        const errorDiv = document.getElementById('error');
+                    <div class="converter-item">
+                        <label for="zawgyi" class="converter-label">Zawgyi (using Zawgyi-One font)</label>
+                        <textarea id="zawgyi" class="textarea" placeholder="သီဟိုဠႀကီးရွင္သည္ အာယုဝဍ္ဎနေဆးၫႊန္းစာကို ဇလြန္ေဈးေဘး ဗာဒံပင္ထက္ အဓိ႒ာန္လ်က္ ဂဃနဏဖတ္ခဲ့သည္။"></textarea>
+                        <div class="button-group">
+                            <button id="copy-zawgyi" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path>
+                                </svg>
+                                Copy
+                                <span class="tooltiptext">Copy text</span>
+                            </button>
+                            <button id="clear-zawgyi" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                                </svg>
+                                Clear
+                                <span class="tooltiptext">Clear text</span>
+                            </button>
+                        </div>
+                    </div>
 
-        function error({ name, message }) {
-            console.error(`Error [${name}]: ${message}`);
-            errorDiv.textContent = `Error: ${message}`;
-            errorDiv.style.display = 'block';
-            setTimeout(() => errorDiv.style.display = 'none', 5000);
-        }
+                    <div class="converter-item">
+                        <label for="win" class="converter-label">Win Innwa (using Win Innwa font)</label>
+                        <textarea id="win" class="textarea" placeholder="od[dkVfrS ÓPfBuD;&Sifonf tm,k0¡eaq;nTef;pmudk ZvGefaps;ab; Am\'Hyifxuf t&quot;d|mefvsuf *Ce zwfcJhonf/"></textarea>
+                        <div class="button-group">
+                            <button id="copy-win" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path>
+                                </svg>
+                                Copy
+                                <span class="tooltiptext">Copy text</span>
+                            </button>
+                            <button id="clear-win" class="button button-secondary tooltip">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                                </svg>
+                                Clear
+                                <span class="tooltiptext">Clear text</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-        function zawgyiToWinText(zawgyi) {
-            try {
-                let result = '';
-                let i = 0;
-                
-                while (i < zawgyi.length) {
-                    // Check for special combinations first (longest to shortest)
-                    let matched = false;
-                    for (let len = 5; len >= 2; len--) {
-                        if (i + len <= zawgyi.length) {
-                            const combo = zawgyi.substr(i, len);
-                            if (specialCombinations[combo]) {
-                                result += specialCombinations[combo];
-                                i += len;
-                                matched = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Handle specific ြ (Ra Medial) issue - it should be 'j' not 'F'
-                        if (i + 1 < zawgyi.length && zawgyi[i+1] === 'ြ') {
-                            const consonant = zawgyi[i];
-                            if (zawgyiToWinChar[consonant]) {
-                                // According to the reference, "ြ" maps to 'j' in Win Innwa
-                                result += zawgyiToWinChar[consonant] + 'j';
-                                i += 2;
-                                matched = true;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Handle "ေ" vowel which comes before consonant in Win Innwa
-                        if (i + 1 < zawgyi.length && zawgyi[i] === 'ေ') {
-                            const nextChar = zawgyi[i+1];
-                            if (zawgyiToWinChar[nextChar]) {
-                                result += 'a' + zawgyiToWinChar[nextChar];
-                                i += 2;
-                                matched = true;
-                            }
-                        }
-                    }
-                    
-                    if (!matched) {
-                        // Standard character conversion for everything else
-                        const char = zawgyi[i];
-                        result += zawgyiToWinChar[char] || char;
-                        i++;
-                    }
-                }
-                
-                return result;
-            } catch (e) {
-                console.error(e);
-                return zawgyi; // Return original on error
-            }
-        }
-        
-        // Helper function to escape special characters in regex
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        }
-        
-        // Helper function to split text into Burmese and non-Burmese segments
-        function splitTextByLanguage(text) {
-            const segments = [];
-            let currentSegment = { text: '', isEnglish: false };
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const charCode = text.charCodeAt(i);
-                
-                // Check if character is English/Latin or other non-Burmese character
-                const isEnglishChar = (charCode >= 32 && charCode <= 126) && 
-                                     !(char in zawgyiToWinChar);
-                
-                if (currentSegment.text === '' || isEnglishChar === currentSegment.isEnglish) {
-                    // Continue current segment
-                    currentSegment.text += char;
-                } else {
-                    // Start new segment
-                    segments.push(currentSegment);
-                    currentSegment = { text: char, isEnglish: isEnglishChar };
-                }
-            }
-            
-            // Add the last segment
-            if (currentSegment.text !== '') {
-                segments.push(currentSegment);
-            }
-            
-            return segments;
-        }
+                <div class="button-group">
+                    <button id="clear-all" class="button button-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                        </svg>
+                        Clear All
+                    </button>
+                </div>
+            </div>
+        </main>
 
-        function winToZawgyiText(win) {
-            try {
-                // This is a placeholder - a complete implementation would need a reverse mapping
-                return win;
-            } catch (e) {
-                throw new Error(`Win to Zawgyi conversion failed: ${e.message}`);
-            }
-        }
+        <footer class="footer">
+            <p>© 2023 MM Type Bridge - Burmese Font Converter</p>
+        </footer>
+    </div>
 
-        unicodeBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const unicodeText = unicodeBox.value;
-                const zawgyiText = Rabbit.uni2zg(unicodeText);
-                zawgyiBox.value = zawgyiText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        zawgyiBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const zawgyiText = zawgyiBox.value;
-                const unicodeText = Rabbit.zg2uni(zawgyiText);
-                unicodeBox.value = unicodeText;
-                winBox.value = zawgyiToWinText(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        winBox.oninput = function() {
-            try {
-                if (typeof Rabbit === 'undefined') throw new Error('Rabbit library not loaded');
-                const winText = winBox.value;
-                const zawgyiText = winToZawgyiText(winText);
-                zawgyiBox.value = zawgyiText;
-                unicodeBox.value = Rabbit.zg2uni(zawgyiText);
-            } catch (e) {
-                error({ name: 'ConversionError', message: e.message });
-            }
-        };
-
-        function clearAll() {
-            unicodeBox.value = '';
-            zawgyiBox.value = '';
-            winBox.value = '';
-            errorDiv.style.display = 'none';
-        }
-
-        function copyText(type) {
-            const text = document.getElementById(type).value;
-            if (text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => alert(`${type.charAt(0).toUpperCase() + type.slice(1)} copied to clipboard!`))
-                    .catch(() => error({ name: 'ClipboardError', message: 'Failed to copy text' }));
-            } else {
-                alert(`No ${type} text to copy!`);
-            }
-        }
-
-        window.onload = function() {
-            if (typeof Rabbit === 'undefined') {
-                error({ name: 'LibraryError', message: 'Rabbit library failed to load. Check your internet connection.' });
-            }
-            
-            // Use only local font - remove all CDN references
-            const winStyle = document.createElement('style');
-            winStyle.textContent = `
-                @font-face {
-                    font-family: 'Win Innwa';
-                    src: url('./fonts/Win_Innwa.ttf') format('truetype');
-                    font-weight: normal;
-                    font-style: normal;
-                    font-display: block;
-                }
-            `;
-            document.head.appendChild(winStyle);
-            
-            // Create preloaders for fonts
-            const preloadZawgyi = document.createElement('div');
-            preloadZawgyi.style.fontFamily = 'Zawgyi-One';
-            preloadZawgyi.style.visibility = 'hidden';
-            preloadZawgyi.textContent = 'ေတြ မတက္ေအာင္ျပင္ဆင္ၿပီးၿပီလား?';
-            document.body.appendChild(preloadZawgyi);
-            
-            const preloadWin = document.createElement('div');
-            preloadWin.style.fontFamily = 'Win Innwa';
-            preloadWin.style.visibility = 'hidden';
-            preloadWin.textContent = 'awG rwufatmifjyifqifNyD;NyDvm;?';
-            document.body.appendChild(preloadWin);
-            
-            // Forcefully apply Win Innwa font to the textarea
-            document.getElementById('win').style.cssText = `
-                font-family: 'Win Innwa' !important;
-                font-size: 16px;
-                line-height: 1.5;
-            `;
-        };
-    </script>
+    <script src="ui.js"></script>
+    <script src="converter.js"></script>
 </body>
 </html> 
